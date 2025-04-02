@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
@@ -48,6 +49,9 @@ type SBOMReconciler struct {
 // If all images have SBOMs, it updates the last discovered timestamp on the registry, since the Registry discovery is completed.
 func (r *SBOMReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
+
+	hostname, _ := os.Hostname()
+	fmt.Println("SBOMReconciler in pod:", hostname)
 
 	var sbom storagev1alpha1.SBOM
 	if err := r.Get(ctx, req.NamespacedName, &sbom); err != nil {

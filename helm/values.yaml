@@ -8,7 +8,7 @@ controller:
     tag: v0.1.0-alpha1
     pullPolicy: IfNotPresent
   replicas: 3
-  logLevel: "info"  
+  logLevel: "debug"  
 
 storage:
   image:
@@ -16,7 +16,7 @@ storage:
     tag: v0.1.0-alpha1
     pullPolicy: IfNotPresent
   replicas: 3
-  logLevel: "info"
+  logLevel: "debug"
 
 worker:
   image:
@@ -24,4 +24,4 @@ worker:
     tag: v0.1.0-alpha1
     pullPolicy: IfNotPresent
   replicas: 3
-  logLevel: "info"
+  logLevel: "debug"

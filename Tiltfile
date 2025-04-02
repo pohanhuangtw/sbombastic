@@ -27,9 +27,9 @@ yaml = helm(
         "controller.image.repository=" + controller_image,
         "storage.image.repository=" + storage_image,
         "worker.image.repository=" + worker_image,
-        "controller.replicas=1",
+        "controller.replicas=3",
         "storage.replicas=1",
-        "worker.replicas=1"
+        "worker.replicas=3"
     ]
 )
 

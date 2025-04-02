@@ -42,6 +42,9 @@ func (h *GenerateSBOMHandler) Handle(message messaging.Message) error {
 		return fmt.Errorf("unexpected message type: %T", message)
 	}
 
+	hostname, _ := os.Hostname()
+	fmt.Println("GenerateSBOMHandler in pod:", hostname)
+
 	h.logger.Debug("SBOM generation requested",
 		"image", generateSBOMMessage.ImageName,
 		"namespace", generateSBOMMessage.ImageNamespace,

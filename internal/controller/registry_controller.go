@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/api/meta"
@@ -41,6 +42,18 @@ type RegistryReconciler struct {
 	Publisher messaging.Publisher
 }
 
+// / Start begins the periodic reconciler.
+// Implements the Runnable inteface, see https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/manager#Runnable.
+func (r *RegistryReconciler) Start(ctx context.Context) error {
+	return nil
+}
+
+// NeedLeaderElection returns true to ensure that only one instance of the controller is running at a time.
+// Implements the LeaderElectionRunnable interface, see https://pkg.go.dev/sigs.k8s.io/controller-runtime/pkg/manager#LeaderElectionRunnable.
+func (r *RegistryReconciler) NeedLeaderElection() bool {
+	return true
+}
+
 // +kubebuilder:rbac:groups=sbombastic.rancher.io,resources=registries,verbs=get;list;watch;create;update;patch;delete
 // +kubebuilder:rbac:groups=sbombastic.rancher.io,resources=registries/status,verbs=get;update;patch
 // +kubebuilder:rbac:groups=sbombastic.rancher.io,resources=registries/finalizers,verbs=update
@@ -50,6 +63,9 @@ type RegistryReconciler struct {
 // If the Registry has repositories specified, it deletes all images that are not in the current list of repositories.
 func (r *RegistryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
+
+	hostname, _ := os.Hostname()
+	fmt.Println("RegistryReconciler in pod:", hostname)
 
 	var registry v1alpha1.Registry
 	if err := r.Get(ctx, req.NamespacedName, &registry); err != nil {
@@ -62,7 +78,6 @@ func (r *RegistryReconciler) Reconcile(ctx context.Context, req ctrl.Request) (c
 
 	if registry.Annotations[v1alpha1.RegistryLastDiscoveredAtAnnotation] == "" {
 		log.Info("Registry needs to be discovered, sending the request.", "name", registry.Name, "namespace", registry.Namespace)
-
 		msg := messaging.CreateCatalog{
 			RegistryName:      registry.Name,
 			RegistryNamespace: registry.Namespace,
@@ -127,6 +142,10 @@ func (r *RegistryReconciler) SetupWithManager(mgr ctrl.Manager) error {
 		Complete(r)
 	if err != nil {
 		return fmt.Errorf("failed to create Registry controller: %w", err)
+	}
+
+	if err := mgr.Add(r); err != nil {
+		return fmt.Errorf("failed enrolling controller with manager: %w", err)
 	}
 
 	return nil

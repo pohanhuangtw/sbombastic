@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http"
+	"os"
 	"path"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -51,6 +52,10 @@ func (h *CreateCatalogHandler) Handle(message messaging.Message) error {
 	if !ok {
 		return fmt.Errorf("unexpected message type: %T", message)
 	}
+
+	hostname, _ := os.Hostname()
+	fmt.Println("CreateCatalogHandler in pod:", hostname)
+
 
 	h.logger.Debug("Catalog creation requested",
 		"registry", createCatalogMessage.RegistryName,

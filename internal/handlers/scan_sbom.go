@@ -43,6 +43,9 @@ func (h *ScanSBOMHandler) Handle(message messaging.Message) error {
 		return fmt.Errorf("unexpected message type: %T", message)
 	}
 
+	hostname, _ := os.Hostname()
+	fmt.Println("CreateCatalogHandler in pod:", hostname)
+
 	h.logger.Debug("SBOM scan requested",
 		"sbom", scanSBOMMessage.SBOMName,
 		"namespace", scanSBOMMessage.SBOMNamespace,

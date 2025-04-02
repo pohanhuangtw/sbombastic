@@ -19,6 +19,7 @@ package controller
 import (
 	"context"
 	"fmt"
+	"os"
 
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -45,6 +46,9 @@ type ImageReconciler struct {
 // If the Image doesn't have the SBOM, it sends a create SBOM request to the workers.
 func (r *ImageReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl.Result, error) {
 	log := log.FromContext(ctx)
+
+	hostname, _ := os.Hostname()
+	fmt.Println("ImageReconciler in pod:", hostname)
 
 	var image storagev1alpha1.Image
 	if err := r.Get(ctx, req.NamespacedName, &image); err != nil {

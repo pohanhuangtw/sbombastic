@@ -55,6 +55,12 @@ spec:
             requests:
               cpu: 10m
               memory: 64Mi
+          volumeMounts:
+            - name: nats-storage
+              mountPath: /tmp/nats/
       serviceAccountName: {{ include "sbombastic.fullname" . }}-controller
       terminationGracePeriodSeconds: 10
-
+      volumes:
+        - name: nats-storage
+          persistentVolumeClaim:
+            claimName: nats
