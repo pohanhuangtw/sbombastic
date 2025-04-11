@@ -11,9 +11,7 @@ spec:
     matchLabels:
       {{ include "sbombastic.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: controller
-  serviceName:
-    - {{ include "sbombastic.fullname" . }}-nats-cluster
-    - {{ include "sbombastic.fullname" . }}-controller
+  serviceName: {{ include "sbombastic.fullname" . }}-nats-cluster
   replicas: {{ .Values.controller.replicas }}
   template:
     metadata:
@@ -33,6 +31,9 @@ spec:
           image: {{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}
           imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           name: controller
+          ports:
+            - containerPort: 6222
+              name: nats
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
