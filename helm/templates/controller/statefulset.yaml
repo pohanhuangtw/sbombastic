@@ -11,7 +11,9 @@ spec:
     matchLabels:
       {{ include "sbombastic.selectorLabels" . | nindent 6 }}
       app.kubernetes.io/component: controller
-  serviceName: {{ include "sbombastic.fullname" . }}-controller
+  serviceName:
+    - {{ include "sbombastic.fullname" . }}-nats-cluster
+    - {{ include "sbombastic.fullname" . }}-controller
   replicas: {{ .Values.controller.replicas }}
   template:
     metadata:
@@ -27,7 +29,7 @@ spec:
             - --health-probe-bind-address=:8081
             {{- if .Values.controller.logLevel }}
             - --log-level={{ .Values.controller.logLevel }}
-            {{- end }}            
+            {{- end }}
           image: {{ .Values.controller.image.repository }}:{{ .Values.controller.image.tag }}
           imagePullPolicy: {{ .Values.controller.image.pullPolicy }}
           name: controller
