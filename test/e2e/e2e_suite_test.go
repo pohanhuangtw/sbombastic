@@ -22,11 +22,21 @@ import (
 	"sigs.k8s.io/e2e-framework/pkg/features"
 )
 
+func EqualReference(img storagev1alpha1.ImageMetadata, registryURI, registryRepository, tag string) bool {
+	return img.RegistryURI == registryURI &&
+		img.Repository == registryRepository &&
+		img.Tag == tag
+}
+
 func TestRegistryCreation(t *testing.T) {
 	spdxPath := filepath.Join("..", "fixtures", "golang-1.12-alpine.spdx.json")
 	reportPath := filepath.Join("..", "fixtures", "golang-1.12-alpine.sarif.json")
-	golangAlpineTag := "1.12-alpine"
+
 	registryName := "test-registry"
+	registryURI := "ghcr.io"
+	registryRepository := "rancher-sandbox/sbombastic/test-assets/golang"
+	golangAlpineTag := "1.12-alpine"
+
 	pollInterval := 1 * time.Second
 	pollTimeout := 60 * time.Second
 	var sbom storagev1alpha1.SBOM
@@ -46,8 +56,8 @@ func TestRegistryCreation(t *testing.T) {
 					Namespace: cfg.Namespace(),
 				},
 				Spec: v1alpha1.RegistrySpec{
-					URI:          "ghcr.io",
-					Repositories: []string{"rancher-sandbox/sbombastic/test-assets/golang"},
+					URI:          registryURI,
+					Repositories: []string{registryRepository},
 				},
 			}
 			err := client.Resources(cfg.Namespace()).Create(ctx, registry)
@@ -63,7 +73,7 @@ func TestRegistryCreation(t *testing.T) {
 					return false
 				}
 				for _, item := range sboms.Items {
-					if item.Spec.ImageMetadata.Tag == golangAlpineTag {
+					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
 						sbom = item
 						return true
 					}
@@ -102,7 +112,7 @@ func TestRegistryCreation(t *testing.T) {
 					return false
 				}
 				for _, item := range vulnReports.Items {
-					if item.Spec.ImageMetadata.Tag == golangAlpineTag {
+					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
 						vulnReport = item
 						return true
 					}
@@ -156,6 +166,22 @@ func TestRegistryCreation(t *testing.T) {
 
 			// Ensure that the SBOM and VulnerabilityReport CRs are deleted after the Registry CR is deleted
 			assert.Eventually(t, func() bool {
+				images := &storagev1alpha1.ImageList{}
+				if err := client.Resources(cfg.Namespace()).List(ctx, images); err != nil {
+					return true
+				}
+
+				imageDeleted := true
+				for _, item := range images.Items {
+					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
+						imageDeleted = false
+						break
+					}
+				}
+				return imageDeleted
+			}, pollTimeout, pollInterval, "Image CR was not deleted after Registry CR was deleted")
+
+			assert.Eventually(t, func() bool {
 				sboms := &storagev1alpha1.SBOMList{}
 				if err := client.Resources(cfg.Namespace()).List(ctx, sboms); err != nil {
 					return true
@@ -163,7 +189,7 @@ func TestRegistryCreation(t *testing.T) {
 
 				sbomDeleted := true
 				for _, item := range sboms.Items {
-					if item.Spec.ImageMetadata.Tag == golangAlpineTag {
+					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
 						sbomDeleted = false
 						break
 					}
@@ -179,8 +205,7 @@ func TestRegistryCreation(t *testing.T) {
 
 				vulnReportDeleted := true
 				for _, item := range vulnReports.Items {
-					if item.Spec.ImageMetadata.Tag == golangAlpineTag {
-						vulnReportDeleted = false
+					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
 						vulnReportDeleted = false
 						break
 					}
