@@ -1,9 +1,0 @@
-apiVersion: sbombastic.rancher.io/v1alpha1
-kind: Registry
-metadata:
-  name: registry-test
-  namespace: sbombastic
-spec:
-  uri: ghcr.io
-  repositories:
-    - rancher-sandbox/sbombastic/test-assets/golang
