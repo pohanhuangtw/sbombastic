@@ -48,7 +48,9 @@ const (
 	kindClusterName = "sbombastic-dev"
 )
 
-var namespace = envconf.RandomName("sbombastic-e2e-ns", 32)
+var namespace = "default"
+
+// envconf.RandomName("sbombastic-e2e-ns", 32)
 
 // func TestMain(m *testing.M) {
 // 	testenv = env.New()
@@ -148,7 +150,7 @@ func TestMain(m *testing.M) {
 		kubeconfig = os.Getenv("HOME") + "/.kube/config" // or hardcode your kind config
 	}
 
-	cfg := envconf.NewWithKubeConfig(kubeconfig)
+	cfg := envconf.NewWithKubeConfig(kubeconfig).WithNamespace(namespace)
 	testenv = env.NewWithConfig(cfg)
 	fmt.Println("namespace", namespace)
 
