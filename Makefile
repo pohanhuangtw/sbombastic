@@ -9,6 +9,26 @@ ENVTEST ?= go run sigs.k8s.io/controller-runtime/tools/setup-envtest@$(ENVTEST_V
 
 ENVTEST_DIR ?= $(shell pwd)/.envtest
 
+RUNNER := docker
+IMAGE_BUILDER := $(RUNNER) buildx
+TARGET_PLATFORMS ?= linux/amd64
+REPO ?= rancher
+TAG ?= v0.1.0-alpha1 # TODO: needs to be set by CI
+BUILD_ACTION = --load
+
+define BUILD_template =
+.PHONY: build-$(1)-image:
+build-$(1)-image:
+	$(IMAGE_BUILDER) build -f ./Dockerfile.$(1) \
+	--build-arg VERSION=$(VERSION) -t "$(REPO)/sbombastic/$(1):$(TAG)" $(BUILD_ACTION) .
+	@echo "Built $(REPO)/sbombastic/$(1):$(TAG)"
+
+E2E_DEPS += build-$(1)-image
+endef
+
+TARGETS=controller storage worker
+$(foreach target,$(TARGETS),$(eval $(call BUILD_template,$(target))))
+
 .PHONY: all
 all: controller storage worker
 
@@ -41,7 +61,7 @@ controller: vet
 
 .PHONY: storage
 storage: vet
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/storage ./cmd/storage 
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o ./bin/storage ./cmd/storage
 
 .PHONY: worker
 worker: vet
@@ -71,3 +91,11 @@ generate-storage: generate-storage-test-crd ## Generate storage  code in pkg/gen
 .PHONY: generate-mocks
 generate-mocks: ## Generate mocks for testing.
 	go generate ./...
+
+.PHONY: test-e2e
+test-e2e:
+ifeq ($(E2E_NO_REBUILD),)
+	make $(E2E_DEPS)
+endif
+	go test ./test/e2e/ -v
+

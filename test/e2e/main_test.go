@@ -17,40 +17,24 @@ limitations under the License.
 package e2e
 
 import (
-	"context"
-	"fmt"
 	"os"
-	"path/filepath"
 	"testing"
-	"time"
 
-	"github.com/rancher/sbombastic/api/v1alpha1"
-	"sigs.k8s.io/controller-runtime/pkg/client"
-	"sigs.k8s.io/e2e-framework/klient/k8s"
-	"sigs.k8s.io/e2e-framework/klient/wait"
-	"sigs.k8s.io/e2e-framework/klient/wait/conditions"
 	"sigs.k8s.io/e2e-framework/pkg/env"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
-	"sigs.k8s.io/e2e-framework/third_party/helm"
-
-	corev1 "k8s.io/api/core/v1"
-	apiextensionsv1 "k8s.io/apiextensions-apiserver/pkg/apis/apiextensions/v1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime"
-	"k8s.io/client-go/rest"
+	"sigs.k8s.io/e2e-framework/pkg/envfuncs"
+	"sigs.k8s.io/e2e-framework/support/kind"
 )
 
 var testenv env.Environment
 
 const (
-	releaseName     = "sbombastic"
-	repoURL         = "https://helm.cilium.io/"
-	kindClusterName = "sbombastic-dev"
+	releaseName = "sbombastic"
+	repoURL     = "https://helm.cilium.io/"
 )
 
-var namespace = "default"
-
-// envconf.RandomName("sbombastic-e2e-ns", 32)
+var namespace = envconf.RandomName("sbombastic-e2e-ns", 32)
+var kindClusterName = envconf.RandomName("sbombastic-e2e-cluster", 32)
 
 // func TestMain(m *testing.M) {
 // 	testenv = env.New()
@@ -67,81 +51,11 @@ var namespace = "default"
 // 	os.Exit(testenv.Run(m))
 // }
 
-func InstallSbomBastic(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-	curDir, _ := os.Getwd()
-	chartPath := filepath.Join(curDir, "../../helm")
-	manager := helm.New(cfg.KubeconfigFile())
-	err := manager.RunRepo(helm.WithArgs("add", releaseName, repoURL))
-	if err != nil {
-		return nil, err
-	}
-
-	fmt.Println("namespace", namespace)
-
-	err = manager.RunInstall(
-		helm.WithName(releaseName),
-		helm.WithChart(chartPath),
-		helm.WithNamespace(namespace),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	// Wait for a worker node to be ready
-	client, err := cfg.NewClient()
-	if err != nil {
-		return nil, err
-	}
-
-	node := &corev1.Node{
-		ObjectMeta: metav1.ObjectMeta{Name: kindClusterName + "-worker"},
-	}
-
-	wait.For(conditions.New(client.Resources()).ResourceMatch(node, func(object k8s.Object) bool {
-		d := object.(*corev1.Node)
-		status := false
-		for _, v := range d.Status.Conditions {
-			if v.Type == "Ready" && v.Status == "True" {
-				status = true
-			}
-		}
-		return status
-	}), wait.WithTimeout(time.Minute*2))
-	return ctx, nil
-}
-
-func UninstallSbomBastic(ctx context.Context, cfg *envconf.Config) (context.Context, error) {
-	manager := helm.New(cfg.KubeconfigFile())
-	err := manager.RunRepo(helm.WithArgs("remove", releaseName))
-	if err != nil {
-		return nil, err
-	}
-	return ctx, nil
-}
-
-func newScheme() (*runtime.Scheme, error) {
-	scheme := runtime.NewScheme()
-
-	if err := apiextensionsv1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
-	if err := v1alpha1.AddToScheme(scheme); err != nil {
-		panic(err)
-	}
-
-	return scheme, nil
-}
-
-func newKubeClient(restConfig *rest.Config) (client.Client, error) {
-	scheme, err := newScheme()
-	if err != nil {
-		return nil, err
-	}
-
-	return client.New(restConfig, client.Options{
-		Scheme: scheme,
-	})
-}
+var (
+	workerImage     = "ghcr.io/rancher-sandbox/sbombastic/worker:v0.1.0-alpha1"
+	controllerImage = "ghcr.io/rancher-sandbox/sbombastic/controller:v0.1.0-alpha1"
+	storageImage    = "ghcr.io/rancher-sandbox/sbombastic/storage:v0.1.0-alpha1"
+)
 
 func TestMain(m *testing.M) {
 	// Step 1: Explicitly set the KUBECONFIG if not set
@@ -150,19 +64,21 @@ func TestMain(m *testing.M) {
 		kubeconfig = os.Getenv("HOME") + "/.kube/config" // or hardcode your kind config
 	}
 
-	cfg := envconf.NewWithKubeConfig(kubeconfig).WithNamespace(namespace)
+	cfg, _ := envconf.NewFromFlags()
 	testenv = env.NewWithConfig(cfg)
-	fmt.Println("namespace", namespace)
 
-	// testenv.Setup(
-	// 	envfuncs.CreateNamespace(namespace), // create namespace
-	// 	InstallSbomBastic,
-	// )
+	testenv.Setup(
+		envfuncs.CreateCluster(kind.NewProvider(), kindClusterName),
+		envfuncs.CreateNamespace(namespace), // create namespace
+		envfuncs.LoadImageToCluster(kindClusterName, workerImage, "--verbose", "--mode", "direct"),
+		envfuncs.LoadImageToCluster(kindClusterName, controllerImage, "--verbose", "--mode", "direct"),
+		envfuncs.LoadImageToCluster(kindClusterName, storageImage, "--verbose", "--mode", "direct"),
+	)
 
-	// testenv.Finish(
-	// 	envfuncs.DeleteNamespace(namespace),
-	// 	UninstallSbomBastic,
-	// )
+	testenv.Finish(
+		envfuncs.DeleteNamespace(namespace),
+		envfuncs.DestroyCluster(kindClusterName),
+	)
 
 	os.Exit(testenv.Run(m))
 }
