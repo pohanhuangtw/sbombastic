@@ -12,16 +12,18 @@ ENVTEST_DIR ?= $(shell pwd)/.envtest
 RUNNER := docker
 IMAGE_BUILDER := $(RUNNER) buildx
 TARGET_PLATFORMS ?= linux/amd64
-REPO ?= rancher
-TAG ?= v0.1.0-alpha1 # TODO: needs to be set by CI
+REGISTRY ?= ghcr.io
+REPO ?= rancher-sandbox
+# TODO: needs to be set by CI
+TAG ?= v0.1.0-alpha1
 BUILD_ACTION = --load
 
 define BUILD_template =
-.PHONY: build-$(1)-image:
+.PHONY: build-$(1)-image
 build-$(1)-image:
 	$(IMAGE_BUILDER) build -f ./Dockerfile.$(1) \
-	--build-arg VERSION=$(VERSION) -t "$(REPO)/sbombastic/$(1):$(TAG)" $(BUILD_ACTION) .
-	@echo "Built $(REPO)/sbombastic/$(1):$(TAG)"
+	--build-arg VERSION=$(VERSION) -t "$(REGISTRY)/$(REPO)/sbombastic/$(1):$(TAG)" $(BUILD_ACTION) .
+	@echo "Built $(REGISTRY)/$(REPO)/sbombastic/$(1):$(TAG)"
 
 E2E_DEPS += build-$(1)-image
 endef
