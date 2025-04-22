@@ -112,6 +112,7 @@ func (h *GenerateSBOMHandler) Handle(message messaging.Message) error {
 		},
 	}
 	if err := controllerutil.SetControllerReference(image, sbom, h.scheme); err != nil {
+		fmt.Printf("failed to set owner reference: %v\n", err)
 		return fmt.Errorf("failed to set owner reference: %w", err)
 	}
 

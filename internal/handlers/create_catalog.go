@@ -209,7 +209,7 @@ func (h *CreateCatalogHandler) refToImages(registryClient registryclient.Client,
 		}
 
 		if err := controllerutil.SetControllerReference(registry, &image, h.scheme); err != nil {
-			h.logger.Info("cannot set owner reference", "reference", ref.Name(), "error", err)
+			fmt.Printf("cannot set owner reference: %v\n", err)
 			// Avoid blocking other images to be cataloged
 			continue
 		}

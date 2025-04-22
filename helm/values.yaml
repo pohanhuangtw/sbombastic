@@ -7,7 +7,7 @@ controller:
     repository: ghcr.io/rancher-sandbox/sbombastic/controller
     tag: v0.1.0-alpha1
     pullPolicy: IfNotPresent
-  replicas: 3
+  replicas: 1
   logLevel: "info"
 
 storage:
@@ -23,7 +23,7 @@ worker:
     repository: ghcr.io/rancher-sandbox/sbombastic/worker
     tag: v0.1.0-alpha1
     pullPolicy: IfNotPresent
-  replicas: 3
+  replicas: 1
   logLevel: "info"
 
 persistence:

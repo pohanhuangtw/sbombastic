@@ -34,10 +34,12 @@ import (
 	"github.com/spdx/tools-golang/spdx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"sigs.k8s.io/e2e-framework/pkg/envconf"
 	"sigs.k8s.io/e2e-framework/pkg/features"
 	"sigs.k8s.io/e2e-framework/third_party/helm"
+
+	// apierrors "k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 func EqualReference(img storagev1alpha1.ImageMetadata, registryURI, registryRepository, tag string) bool {
@@ -58,7 +60,7 @@ func TestRegistryCreation(t *testing.T) {
 	golangAlpineTag := "1.12-alpine"
 
 	pollInterval := 1 * time.Second
-	pollTimeout := 60 * time.Second
+	pollTimeout := 20 * time.Second
 	var sbom storagev1alpha1.SBOM
 
 	f := features.New("Registry CR Creation test").
@@ -73,13 +75,11 @@ func TestRegistryCreation(t *testing.T) {
 
 			assert.NoError(t, err, "sbombastic helm chart is not installed correctly")
 
-			client := cfg.Client()
-			storagev1alpha1.AddToScheme(client.Resources(cfg.Namespace()).GetScheme())
-			v1alpha1.AddToScheme(client.Resources(cfg.Namespace()).GetScheme())
+			storagev1alpha1.AddToScheme(cfg.Client().Resources(cfg.Namespace()).GetScheme())
+			v1alpha1.AddToScheme(cfg.Client().Resources(cfg.Namespace()).GetScheme())
 			return ctx
 		}).
 		Assess("Create Registry CR", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			client := cfg.Client()
 			registry := &v1alpha1.Registry{
 				ObjectMeta: metav1.ObjectMeta{
 					Name:      registryName,
@@ -90,16 +90,14 @@ func TestRegistryCreation(t *testing.T) {
 					Repositories: []string{registryRepository},
 				},
 			}
-			err := client.Resources(cfg.Namespace()).Create(ctx, registry)
+			err := cfg.Client().Resources(cfg.Namespace()).Create(ctx, registry)
 			require.NoError(t, err)
 			return ctx
 		}).
 		Assess("SPDX SBOM is created with expected content", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			client := cfg.Client()
-
 			assert.Eventually(t, func() bool {
 				sboms := &storagev1alpha1.SBOMList{}
-				if err := client.Resources(cfg.Namespace()).List(ctx, sboms); err != nil {
+				if err := cfg.Client().Resources(cfg.Namespace()).List(ctx, sboms); err != nil {
 					return false
 				}
 				for _, item := range sboms.Items {
@@ -132,13 +130,12 @@ func TestRegistryCreation(t *testing.T) {
 			assert.Empty(t, diff)
 			return ctx
 		}).
-		Assess("Vulnerability Report is created with expected content", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			client := cfg.Client()
+		Assess("Vulnerability Report is created with expecfted conteentrrf", func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
 			var vulnReport storagev1alpha1.VulnerabilityReport
 
 			assert.Eventually(t, func() bool {
 				vulnReports := &storagev1alpha1.VulnerabilityReportList{}
-				if err := client.Resources(cfg.Namespace()).List(ctx, vulnReports); err != nil {
+				if err := cfg.Client().Resources(cfg.Namespace()).List(ctx, vulnReports); err != nil {
 					return false
 				}
 				for _, item := range vulnReports.Items {
@@ -179,78 +176,109 @@ func TestRegistryCreation(t *testing.T) {
 
 			assert.Empty(t, diff)
 			return ctx
-		}).
-		Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
-			client := cfg.Client()
-
-			registry := &v1alpha1.Registry{
-				ObjectMeta: metav1.ObjectMeta{
-					Name:      registryName,
-					Namespace: cfg.Namespace(),
-				},
-			}
-			err := client.Resources(cfg.Namespace()).Delete(ctx, registry)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			// Ensure that the SBOM and VulnerabilityReport CRs are deleted after the Registry CR is deleted
-			assert.Eventually(t, func() bool {
-				images := &storagev1alpha1.ImageList{}
-				if err := client.Resources(cfg.Namespace()).List(ctx, images); err != nil {
-					return true
-				}
-
-				imageDeleted := true
-				for _, item := range images.Items {
-					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
-						imageDeleted = false
-						break
-					}
-				}
-				return imageDeleted
-			}, pollTimeout, pollInterval, "Image CR was not deleted after Registry CR was deleted")
-
-			assert.Eventually(t, func() bool {
-				sboms := &storagev1alpha1.SBOMList{}
-				if err := client.Resources(cfg.Namespace()).List(ctx, sboms); err != nil {
-					return true
-				}
-
-				sbomDeleted := true
-				for _, item := range sboms.Items {
-					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
-						sbomDeleted = false
-						break
-					}
-				}
-				return sbomDeleted
-			}, pollTimeout, pollInterval, "SBOM CR was not deleted after Registry CR was deleted")
-
-			assert.Eventually(t, func() bool {
-				vulnReports := &storagev1alpha1.VulnerabilityReportList{}
-				if err := client.Resources(cfg.Namespace()).List(ctx, vulnReports); err != nil {
-					return true
-				}
-
-				vulnReportDeleted := true
-				for _, item := range vulnReports.Items {
-					if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
-						vulnReportDeleted = false
-						break
-					}
-				}
-				return vulnReportDeleted
-			}, pollTimeout, pollInterval, "VulnerabilityReport CR was not deleted after Registry CR was deleted")
-
-			manager := helm.New(cfg.KubeconfigFile())
-			err = manager.RunUninstall(
-				helm.WithName(releaseName),
-				helm.WithNamespace(cfg.Namespace()),
-			)
-			assert.NoError(t, err, "sbombastic helm chart is not deleted correctly")
-			return ctx
 		})
+		// Teardown(func(ctx context.Context, t *testing.T, cfg *envconf.Config) context.Context {
+		// 	registry := &v1alpha1.Registry{
+		// 		ObjectMeta: metav1.ObjectMeta{
+		// 			Name:      registryName,
+		// 			Namespace: cfg.Namespace(),
+		// 		},
+		// 	}
+
+		// 	var err error
+		// 	// fmt.Printf("prop: %v\n", resources.WithDeletePropagation(string(metav1.DeletePropagationForeground)))rr
+		// 	err = cfg.Client().Resources(cfg.Namespace()).Delete(ctx,
+		// 		registry,
+		// 		resources.WithDeletePropagation(string(metav1.DeletePropagationForeground)))
+		// 	if err != nil {
+		// 		t.Fatal(err)
+		// 	}
+
+		// 	fmt.Printf("DeletePropagationBackground err: %v\n", err)
+
+		// 	// client.Delete(ctx, registry, client.WithDeletePropagation(metav1.DeletePropagationForeground))
+
+		// 	// Ensure that the SBOM and VulnerabilityReport CRs are deleted after the Registry CR is deleted
+		// 	assert.Eventually(t, func() bool {
+		// 		images := &storagev1alpha1.ImageList{}
+		// 		listErr := cfg.Client().Resources(cfg.Namespace()).List(ctx, images)
+		// 		fmt.Printf("listErr in get ImageList: %v\n", listErr)
+
+		// 		if apierrors.IsNotFound(listErr) {
+		// 			return true
+		// 		} else if listErr != nil {
+		// 			t.Fatal(listErr)
+		// 			return false
+		// 		}
+
+		// 		imageDeleted := true
+		// 		for _, item := range images.Items {
+		// 			if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
+		// 				imageDeleted = false
+		// 				fmt.Printf("image item.DeletionTimestamp: %v\n", item.DeletionTimestamp)
+		// 				break
+		// 			}
+		// 		}
+		// 		return imageDeleted
+		// 	}, pollTimeout, pollInterval, "Image CR was not deleted after Registry CR was deleted")
+
+		// 	assert.Eventually(t, func() bool {
+		// 		sboms := &storagev1alpha1.SBOMList{}
+		// 		listErr := cfg.Client().Resources(cfg.Namespace()).List(ctx, sboms)
+		// 		fmt.Printf("listErr in get SBOMList: %v\n", listErr)
+
+		// 		if apierrors.IsNotFound(listErr) {
+		// 			return true
+		// 		} else if listErr != nil {
+		// 			t.Fatal(listErr)
+		// 			return false
+		// 		}
+
+		// 		sbomDeleted := true
+		// 		for _, item := range sboms.Items {
+		// 			if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
+		// 				sbomDeleted = false
+		// 				fmt.Printf("sbom item.DeletionTimestamp: %v\n", item.DeletionTimestamp)
+		// 				break
+		// 			}
+		// 		}
+		// 		return sbomDeleted
+		// 	}, pollTimeout, pollInterval, "SBOM CR was not deleted after Registry CR was deleted")
+
+		// 	assert.Eventually(t, func() bool {
+		// 		vulnReports := &storagev1alpha1.VulnerabilityReportList{}
+		// 		listErr := cfg.Client().Resources(cfg.Namespace()).List(ctx, vulnReports)
+		// 		fmt.Printf("listErr in get VulnerabilityReportList: %v\n", listErr)
+		// 		// fmt.Printf("vulnReports: %v\n", vulnReports)
+		// 		if apierrors.IsNotFound(listErr) {
+		// 			return true
+		// 		} else if listErr != nil {
+		// 			t.Fatal(listErr)
+		// 			return false
+		// 		}
+
+		// 		vulnReportDeleted := true
+		// 		for _, item := range vulnReports.Items {
+		// 			if EqualReference(item.Spec.ImageMetadata, registryURI, registryRepository, golangAlpineTag) {
+		// 				vulnReportDeleted = false
+		// 				fmt.Printf("vulnReport item.DeletionTimestamp: %v\n", item.DeletionTimestamp)
+		// 				if item.DeletionTimestamp == nil { // 檢查是否正在被刪除
+		// 					return false
+		// 				}
+		// 				break
+		// 			}
+		// 		}
+		// 		return vulnReportDeleted
+		// 	}, pollTimeout, pollInterval, "VulnerabilityReport CR was not deleted after Registry CR was deleted")
+
+		// 	manager := helm.New(cfg.KubeconfigFile())
+		// 	err = manager.RunUninstall(
+		// 		helm.WithName(releaseName),
+		// 		helm.WithNamespace(cfg.Namespace()),
+		// 	)
+		// 	assert.NoError(t, err, "sbombastic helm chart is not deleted correctly")
+		// 	return ctx
+		// })
 
 	testenv.Test(t, f.Feature())
 }

@@ -49,10 +49,10 @@ func TestMain(m *testing.M) {
 		envfuncs.LoadImageToCluster(kindClusterName, storageImage, "--verbose", "--mode", "direct"),
 	)
 
-	testenv.Finish(
-		envfuncs.DeleteNamespace(namespace),
-		envfuncs.DestroyCluster(kindClusterName),
-	)
+	// testenv.Finish(
+	// 	envfuncs.DeleteNamespace(namespace),
+	// 	envfuncs.DestroyCluster(kindClusterName),
+	// )
 
 	os.Exit(testenv.Run(m))
 }

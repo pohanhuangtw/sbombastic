@@ -125,6 +125,7 @@ func (h *ScanSBOMHandler) Handle(message messaging.Message) error {
 		},
 	}
 	if err := controllerutil.SetControllerReference(sbom, vulnerabilityReport, h.scheme); err != nil {
+		fmt.Printf("failed to set owner reference: %v\n", err)
 		return fmt.Errorf("failed to set owner reference: %w", err)
 	}
 
