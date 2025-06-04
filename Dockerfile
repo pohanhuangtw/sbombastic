@@ -23,13 +23,13 @@ COPY pkg/ pkg/
 # was called. For example, if we call make docker-build in a local env which has the Apple Silicon M1 SO
 # the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
-FROM base as builder-controller
+FROM base AS builder-controller
 RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/controller ./cmd/controller
 
-FROM base as builder-worker
+FROM base AS builder-worker
 RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/worker ./cmd/worker
 
-FROM base as builder-storage
+FROM base AS builder-storage
 RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/storage ./cmd/storage
 
 # Use distroless as minimal base image to package the manager binary
