@@ -50,7 +50,7 @@ jobs:
                 release_id: `${RELEASE_ID}`,
                 draft: false,
                 tag_name: `${TAG_NAME}`,
-                name: `${TAG_NAME}`,
+                name: `SBOMbastic ${TAG_NAME}`,
                 prerelease: isPreRelease,
                 make_latest: !isPreRelease
               });
