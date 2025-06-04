@@ -23,15 +23,20 @@ COPY pkg/ pkg/
 # was called. For example, if we call make docker-build in a local env which has the Apple Silicon M1 SO
 # the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
-RUN CGO_ENABLED=0 GOOS=linux go build -a -o ./controller ./cmd/controller && \
-    CGO_ENABLED=0 GOOS=linux go build -a -o ./storage ./cmd/storage && \
-    CGO_ENABLED=0 GOOS=linux go build -a -o ./worker ./cmd/worker
+FROM base as builder-controller
+RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/controller ./cmd/controller
+
+FROM base as builder-worker
+RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/worker ./cmd/worker
+
+FROM base as builder-storage
+RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/storage ./cmd/storage
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot AS controller
 WORKDIR /
-COPY --from=builder /workspace/controller .
+COPY --from=builder-controller /workspace/controller .
 USER 65532:65532
 
 ENTRYPOINT ["/controller"]
@@ -40,7 +45,7 @@ ENTRYPOINT ["/controller"]
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot AS storage
 WORKDIR /
-COPY --from=builder /workspace/storage .
+COPY --from=builder-storage /workspace/storage .
 USER 65532:65532
 
 ENTRYPOINT ["/storage"]
@@ -49,7 +54,7 @@ ENTRYPOINT ["/storage"]
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot AS worker
 WORKDIR /
-COPY --from=builder /workspace/storage .
+COPY --from=builder-worker /workspace/worker .
 USER 65532:65532
 
 ENTRYPOINT ["/storage"]
