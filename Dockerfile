@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 # Build the manager binary
-FROM golang:1.24 AS builder
+FROM golang:1.24 AS base
 ARG TARGETOS
 ARG TARGETARCH
 
@@ -24,13 +24,13 @@ COPY pkg/ pkg/
 # the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 FROM base AS builder-controller
-RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/controller ./cmd/controller
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./controller ./cmd/controller
 
 FROM base AS builder-worker
-RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/worker ./cmd/worker
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./worker ./cmd/worker
 
 FROM base AS builder-storage
-RUN CGO_ENABLED=0 GOOS=linux go build -o /workspace/bin/storage ./cmd/storage
+RUN CGO_ENABLED=0 GOOS=linux go build -o ./storage ./cmd/storage
 
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
