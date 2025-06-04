@@ -19,12 +19,12 @@ jobs:
 #     with:
 #       version: ${{ github.ref_name }}
 
-#   create-release:
-#     needs: [call-build, call-helm-update]
-#     runs-on: ubuntu-latest
-#     steps:
-#       - name: Create GitHub Release
-#         uses: softprops/action-gh-release@v1
-#         with:
-#           tag_name: ${{ github.ref_name }}
-#           name: Release ${{ github.ref_name }}
+  create-release:
+    # needs: [call-build, call-helm-update]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
