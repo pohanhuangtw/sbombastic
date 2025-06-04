@@ -48,7 +48,8 @@ jobs:
         uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
         with:
           context: .
-          file: ./Dockerfile.controller
+          target: controller
+          file: ./Dockerfile
           platforms: linux/amd64, linux/arm64
           push: true
           sbom: true
@@ -60,7 +61,8 @@ jobs:
         uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
         with:
           context: .
-          file: ./Dockerfile.worker
+          target: worker
+          file: ./Dockerfile
           platforms: linux/amd64, linux/arm64
           push: true
           sbom: true
@@ -72,7 +74,8 @@ jobs:
         uses: docker/build-push-action@14487ce63c7a62a4a324b0bfb37086795e31c6c1 # v6.16.0
         with:
           context: .
-          file: ./Dockerfile.storage
+          target: storage
+          file: ./Dockerfile
           platforms: linux/amd64, linux/arm64
           push: true
           sbom: true
