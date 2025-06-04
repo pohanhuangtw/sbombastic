@@ -12,13 +12,6 @@ jobs:
           version: ${{ github.ref_name }}
         secrets: inherit
 
-
-#   call-helm-update:
-#     needs: call-build/
-#     uses: ./.github/workflows/update-helm.yaml
-#     with:
-#       version: ${{ github.ref_name }}
-
   create-release:
     # needs: [call-build, call-helm-update]
     runs-on: ubuntu-latest
