@@ -48,7 +48,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ./Dockerfile
+          file: ./Dockerfile.${{ matrix.component }}
           target: ${{ matrix.component }}
           platforms: linux/${{ matrix.platform }}
           push: true
