@@ -40,6 +40,15 @@ jobs:
           with:
             pattern: attestation-SBOMbastic-*
             merge-multiple: true
+        - name: Display structure of downloaded files
+          run: ls -R
+
+        - name: Create tarball for the attestation files
+          run: |
+            for component in "controller" "worker" "storage"; do
+              tar -czf attestation-SBOMbastic-$component-amd64.tar.gz $(ls SBOMbastic-$component-attestation-amd64-*)
+            done
+
         - name: Upload release assets
           id: upload_release_assets
           uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
