@@ -78,7 +78,7 @@ jobs:
         run: |
           set -e
           DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ steps.build-image.outputs.digest }} \
-            | jq '.manifests[] | select(.annotations["vnd.docker.reference.type"]=="attestation-manifest") | select(.annotations["vnd.docker.reference.digest"]=="${{ env.arch_DIGEST }}") | .digest'
+            | jq '.manifests[] | select(.annotations["vnd.docker.reference.type"]=="attestation-manifest") | select(.annotations["vnd.docker.reference.digest"]=="${{ env.PLATFORM_DIGEST }}") | .digest'
           )
           echo "ATTESTATION_MANIFEST_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
 
