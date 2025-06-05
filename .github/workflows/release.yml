@@ -7,106 +7,12 @@ on:
 
 jobs:
     build:
-        uses: ./.github/workflows/container-build.yaml
-        with:
-          version: ${{ github.ref_name }}
-        secrets: inherit
-    attestation:
-      name: Sign attestations and upload as artifacts
-      needs: [build]
-      strategy:
-        matrix:
-          arch: [amd64]
-          component: [controller, worker, storage]
-      permissions:
-        packages: write
-        id-token: write
-      runs-on: ubuntu-latest
-      steps:
-        - name: Install cosign
-          uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
-        - name: Install the crane command
-          uses: kubewarden/github-actions/crane-installer@7195340a122321bf547fda2ffc07eed6f6ae43f6 # v4.5.1
-        - name: Login to GitHub Container Registry
-          uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
-          with:
-            registry: ghcr.io
-            username: ${{ github.repository_owner }}
-            password: ${{ secrets.GITHUB_TOKEN }}
-        - name: Find platform digest
-          shell: bash
-          run: |
-            set -e
-            DIGEST=$(crane digest \
-              --platform "linux/${{ matrix.arch }}" \
-              ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}@${{ needs.build.outputs.digest }})
-
-            echo "PLATFORM_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
-
-        - name: Find attestation digest
-          run: |
-            set -e
-            DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ needs.build.outputs.digest }} \
-              | jq '.manifests[] | select(.annotations["vnd.docker.reference.type"]=="attestation-manifest") | select(.annotations["vnd.docker.reference.digest"]=="${{ env.PLATFORM_DIGEST }}") | .digest'
-            )
-            echo "ATTESTATION_MANIFEST_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
-
-        - name: Find provenance manifest digest
-          run: |
-            set -e
-            DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.ATTESTATION_MANIFEST_DIGEST}} | \
-              jq '.layers[] | select(.annotations["in-toto.io/predicate-type"] == "https://slsa.dev/provenance/v0.2") | .digest')
-            echo "PROVENANCE_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
-
-        - name: Sign provenance manifest
-          run: |
-            cosign sign --yes \
-            ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.PROVENANCE_DIGEST}}
-
-            cosign verify \
-              --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-              --certificate-identity="https://github.com/${{github.repository_owner}}/sbombastic/.github/workflows/release.yml@${{ github.ref }}" \
-              ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.PROVENANCE_DIGEST}}
-
-        - name: Find SBOM manifest layer digest
-          run: |
-            set -e
-            DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.ATTESTATION_MANIFEST_DIGEST}} |  \
-              jq '.layers | map(select(.annotations["in-toto.io/predicate-type"] == "https://spdx.dev/Document")) | map(.digest) | join(" ")')
-            echo "SBOM_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
-
-        - name: Download provenance and SBOM files
-          run: |
-            set -e
-            crane blob ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.PROVENANCE_DIGEST}} \
-              > SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-provenance.json
-            sha256sum SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-provenance.json \
-              >> SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
-
-            crane blob ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.SBOM_DIGEST}} \
-              > SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-sbom.json
-            sha256sum SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-sbom.json \
-              >> SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
-
-        - name: Sign checksum file
-          run: |
-            cosign sign-blob --yes \
-              --bundle SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum-cosign.bundle \
-              SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
-
-            cosign verify-blob \
-              --bundle SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum-cosign.bundle \
-              --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
-              --certificate-identity="https://github.com/${{github.repository_owner}}/sbombastic/.github/workflows/release.yml@${{ github.ref }}" \
-              SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
-
-        - name: Upload SBOMs as artifacts
-          uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-          with:
-            name: attestation-SBOMbastic-${{ matrix.component }}-${{ matrix.arch }}
-            path: SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}*
+      uses: ./.github/workflows/container-build.yaml
+      with:
+        version: ${{ github.ref_name }}
+      secrets: inherit
     create-release:
-      needs: [attestation]
+      needs: [build]
       runs-on: ubuntu-latest
       steps:
         - name: Retrieve tag name
@@ -132,7 +38,7 @@ jobs:
         - name: Download attestation artifacts
           uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
           with:
-            pattern: attestation-*
+            pattern: attestation-SBOMbastic-*
             merge-multiple: true
         - name: Upload release assets
           id: upload_release_assets
@@ -142,7 +48,11 @@ jobs:
               let fs = require('fs');
               let path = require('path');
 
-              let files = ['attestation-amd64.tar.gz']
+              let files = [
+                  'attestation-SBOMbastic-controller-amd64.tar.gz',
+                  'attestation-SBOMbastic-worker-amd64.tar.gz',
+                  'attestation-SBOMbastic-storage-amd64.tar.gz'
+                  ]
               const {RELEASE_ID} = process.env
 
               for (const file of files) {
