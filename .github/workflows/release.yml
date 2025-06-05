@@ -36,7 +36,33 @@ jobs:
                 }
               }
               core.setFailed(`Draft release not found`)
+        - name: Download attestation artifacts
+          uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+          with:
+            pattern: attestation-*
+            merge-multiple: true
+        - name: Upload release assets
+          id: upload_release_assets
+          uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+          with:
+            script: |
+              let fs = require('fs');
+              let path = require('path');
 
+              let files = ['attestation-amd64.tar.gz']
+              const {RELEASE_ID} = process.env
+
+              for (const file of files) {
+                let file_data = fs.readFileSync(file);
+
+                let response = await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: `${RELEASE_ID}`,
+                  name: path.basename(file),
+                  data: file_data,
+                });
+              }
         - name: Publish release
           uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
           with:
