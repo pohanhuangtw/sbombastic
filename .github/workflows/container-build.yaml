@@ -59,13 +59,6 @@ jobs:
           sbom: true
           provenance: mode=max
           tags: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }}
-      - id: setoutput
-        name: Set output parameters
-        run: |
-            echo "repository=ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ env.TAG_NAME }}" >> $GITHUB_OUTPUT
-            echo "digest-SBOMbastic-${{ matrix.component }}=${{ steps.build-image.outputs.digest }}" >> $GITHUB_OUTPUT
-
   build:
     if: ${{ inputs.version }}
     permissions:
@@ -99,12 +92,8 @@ jobs:
           sbom: true
           provenance: mode=max
           tags: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}:${{ env.TAG_NAME }}
-      - id: setoutput
-        name: Set output parameters
-        run: |
-            echo "repository=ghcr.io/${{github.repository_owner}}/sbombastic/${{ inputs.component }}" >> $GITHUB_OUTPUT
-            echo "tag=${{ env.TAG_NAME }}" >> $GITHUB_OUTPUT
-            echo "digest=${{ steps.build-image.outputs.digest }}" >> $GITHUB_OUTPUT
+    outputs:
+      digest: ${{ steps.build-image.outputs.digest }}
   attest:
     needs: [build]
     if: ${{ inputs.version }}
