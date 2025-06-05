@@ -13,10 +13,10 @@ COPY go.sum go.sum
 RUN go mod download
 
 # Copy the go source
-COPY cmd/ cmd/
 COPY api/ api/
 COPY internal/ internal/
 COPY pkg/ pkg/
+RUN CGO_ENABLED=0 GOOS=linux go build -o /dev/null ./internal/... ./pkg/... ./api/...
 
 # Build
 # the GOARCH has not a default value to allow the binary be built according to the host where the command
@@ -24,12 +24,15 @@ COPY pkg/ pkg/
 # the docker BUILDPLATFORM arg will be linux/arm64 when for Apple x86 it will be linux/amd64. Therefore,
 # by leaving it empty we can ensure that the container and binary shipped on it will have the same platform.
 FROM base AS builder-controller
+COPY cmd/controller cmd/controller
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./controller ./cmd/controller
 
 FROM base AS builder-worker
+COPY cmd/worker cmd/worker
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./worker ./cmd/worker
 
 FROM base AS builder-storage
+COPY cmd/storage cmd/storage
 RUN CGO_ENABLED=0 GOOS=linux go build -o ./storage ./cmd/storage
 
 # Use distroless as minimal base image to package the manager binary
@@ -57,4 +60,4 @@ WORKDIR /
 COPY --from=builder-worker /workspace/worker .
 USER 65532:65532
 
-ENTRYPOINT ["/storage"]
+ENTRYPOINT ["/worker"]
