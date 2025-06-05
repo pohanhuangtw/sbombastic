@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         component: [controller, worker, storage]
-        platform: [amd64, arm64]
+        platform: [amd64]
     permissions:
       packages: write
       id-token: write # to mint the OIDC token for Sigstore signatures
@@ -53,5 +53,3 @@ jobs:
           platforms: linux/${{ matrix.platform }}
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ matrix.platform }}-latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
