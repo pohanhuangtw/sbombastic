@@ -1,28 +1,24 @@
-name: Build container image, sign it, and generate SBOMs
+name: Build, Sign, and Generate SBOM, Attestation & Provenance
 
 on:
   workflow_call:
     inputs:
       version:
         type: string
-    outputs:
-      digest:
-        description: "Container image digest"
-        value: ${{jobs.build.outputs.digest}}
 
   push:
     branches:
       - "main"
 jobs:
-  buildr:
+  build-and-sign:
     strategy:
       matrix:
         component: [controller, worker, storage]
-        platform: [amd64]
+        arch: [amd64]
     permissions:
       packages: write
       id-token: write # to mint the OIDC token for Sigstore signatures
-    runs-on: ${{ matrix.platform == 'arm64' && 'ubuntu-22.04-arm64' || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.arch == 'arm64' && 'ubuntu-22.04-arm64' || 'ubuntu-latest' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
@@ -44,14 +40,16 @@ jobs:
         if: ${{ inputs.version }}
         run: |
           echo TAG_NAME=${{ inputs.version }} >> $GITHUB_ENV
-      - name: Build and push ${{ matrix.component }} for ${{ matrix.platform }}
+      - name: Build and push ${{ matrix.component }} for ${{ matrix.arch }}
         id: build-image
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile.${{ matrix.component }}
-          platforms: linux/${{ matrix.platform }}
+          platforms: linux/${{ matrix.arch }}
           push: true
+          sbom: true
+          provenance: mode=max
           tags: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }}
       - name: Sign container image
         run: |
@@ -62,9 +60,76 @@ jobs:
             --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
             --certificate-identity="https://github.com/${{github.repository_owner}}/sbombastic/.github/workflows/container-build.yaml@${{ github.ref }}" \
             ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ steps.build-image.outputs.digest }}
-      - id: setoutput
-        name: Set output parameters
+
+      - name: Find platform digest
+        shell: bash
         run: |
-          echo "repository=ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}" >> $GITHUB_OUTPUT
-          echo "tag=${{ env.TAG_NAME }}" >> $GITHUB_OUTPUT
-          echo "digest=${{ steps.build-image.outputs.digest }}" >> $GITHUB_OUTPUT
+          set -e
+          DIGEST=$(crane digest \
+            --platform "linux/${{ matrix.arch }}" \
+            ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}@${{ steps.build-image.outputs.digest }})
+
+          echo "PLATFORM_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
+
+      - name: Find attestation digest
+        run: |
+          set -e
+          DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ steps.build-image.outputs.digest }} \
+            | jq '.manifests[] | select(.annotations["vnd.docker.reference.type"]=="attestation-manifest") | select(.annotations["vnd.docker.reference.digest"]=="${{ env.arch_DIGEST }}") | .digest'
+          )
+          echo "ATTESTATION_MANIFEST_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
+
+      - name: Find provenance manifest digest
+        run: |
+          set -e
+          DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.ATTESTATION_MANIFEST_DIGEST}} | \
+            jq '.layers[] | select(.annotations["in-toto.io/predicate-type"] == "https://slsa.dev/provenance/v0.2") | .digest')
+          echo "PROVENANCE_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
+
+      - name: Sign provenance manifest
+        run: |
+          cosign sign --yes \
+          ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.PROVENANCE_DIGEST}}
+
+          cosign verify \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity="https://github.com/${{github.repository_owner}}/sbombastic/.github/workflows/container-build.yaml@${{ github.ref }}" \
+            ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.PROVENANCE_DIGEST}}
+
+      - name: Find SBOM manifest layer digest
+        run: |
+          set -e
+          DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.ATTESTATION_MANIFEST_DIGEST}} |  \
+            jq '.layers | map(select(.annotations["in-toto.io/predicate-type"] == "https://spdx.dev/Document")) | map(.digest) | join(" ")')
+          echo "SBOM_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
+
+      - name: Download provenance and SBOM files
+        run: |
+          set -e
+          crane blob ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.PROVENANCE_DIGEST}} \
+            > SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-provenance.json
+          sha256sum SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-provenance.json \
+            >> SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
+
+          crane blob ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ env.SBOM_DIGEST}} \
+            > SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-sbom.json
+          sha256sum SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-sbom.json \
+            >> SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
+
+      - name: Sign checksum file
+        run: |
+          cosign sign-blob --yes \
+            --bundle SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum-cosign.bundle \
+            SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
+
+          cosign verify-blob \
+            --bundle SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum-cosign.bundle \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity="https://github.com/${{github.repository_owner}}/sbombastic/.github/workflows/container-build.yaml@${{ github.ref }}" \
+            SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}-checksum.txt
+
+      - name: Upload SBOMs as artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: attestation-SBOMbastic-${{ matrix.component }}-${{ matrix.arch }}
+          path: SBOMbastic-${{ matrix.component }}-attestation-${{ matrix.arch }}*
