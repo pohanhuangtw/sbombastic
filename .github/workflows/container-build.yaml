@@ -49,7 +49,21 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.${{ matrix.component }}
-          target: ${{ matrix.component }}
           platforms: linux/${{ matrix.platform }}
           push: true
           tags: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }}
+      - name: Sign container image
+        run: |
+          cosign sign --yes \
+            ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ steps.build-image.outputs.digest }}
+
+          cosign verify \
+            --certificate-oidc-issuer=https://token.actions.githubusercontent.com \
+            --certificate-identity="https://github.com/${{github.repository_owner}}/sbombastic/.github/workflows/release.yml@${{ github.ref }}" \
+            ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}@${{ steps.build-image.outputs.digest }}
+      - id: setoutput
+        name: Set output parameters
+        run: |
+          echo "repository=ghcr.io/${{github.repository_owner}}/sbombastic/${{ matrix.component }}" >> $GITHUB_OUTPUT
+          echo "tag=${{ env.TAG_NAME }}" >> $GITHUB_OUTPUT
+          echo "digest=${{ steps.build-image.outputs.digest }}" >> $GITHUB_OUTPUT
