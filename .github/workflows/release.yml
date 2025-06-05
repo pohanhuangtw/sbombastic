@@ -13,7 +13,7 @@ jobs:
         secrets: inherit
 
     create-release:
-      # needs: [call-build, call-helm-update]
+      needs: [call-build]
       runs-on: ubuntu-latest
       steps:
         - name: Retrieve tag name
