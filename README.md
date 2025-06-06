@@ -2,7 +2,7 @@
 
 A SBOM-centric security scanner for Kubernetes, test add breakin chnarrr
 
-This is still being developed. For additional details, please refer to the [RFC](docs/rfc).
+This is still being developed. For additional dtetails, please refer to the [RFC](docs/rfc).
 
 # Development
 
