@@ -51,8 +51,10 @@ jobs:
 
       - name: Create tarball for the attestation files
         run: |
-          for component in "controller" "worker" "storage"; do
-            tar -czf attestation-SBOMbastic-$component-amd64.tar.gz $(ls SBOMbastic-$component-attestation-amd64-*)
+          for arch in "amd64" "arm64"; do
+            for component in "controller" "worker" "storage"; do
+              tar -czf attestation-SBOMbastic-$component-$arch.tar.gz $(ls SBOMbastic-$component-attestation-$arch-*)
+            done
           done
 
       - name: Upload release assets
