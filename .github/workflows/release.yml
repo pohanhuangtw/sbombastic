@@ -11,7 +11,7 @@ jobs:
       strategy:
         matrix:
           component: [controller, worker, storage]
-          arch: [amd64]
+          arch: [amd64, arm64]
       with:
         version: ${{ github.ref_name }}
         component: ${{ matrix.component }}
@@ -67,6 +67,9 @@ jobs:
                 'attestation-SBOMbastic-controller-amd64.tar.gz',
                 'attestation-SBOMbastic-worker-amd64.tar.gz',
                 'attestation-SBOMbastic-storage-amd64.tar.gz'
+                'attestation-SBOMbastic-controller-arm64.tar.gz',
+                'attestation-SBOMbastic-worker-arm64.tar.gz',
+                'attestation-SBOMbastic-storage-arm64.tar.gz'
                 ]
             const {RELEASE_ID} = process.env
 
