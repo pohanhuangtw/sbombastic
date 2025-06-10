@@ -209,8 +209,8 @@ jobs:
           arm64_digest=$(cat ${{ matrix.component }}-arm64.txt)
 
           docker buildx imagetools create \
-            -t ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ github.env.TAG_NAME }} \
+            -t ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }} \
             ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}@${amd64_digest} \
             ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}@${arm64_digest}
 
-          docker buildx imagetools inspect ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ github.env.TAG_NAME }}
+          docker buildx imagetools inspect ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }}
