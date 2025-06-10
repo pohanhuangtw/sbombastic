@@ -82,7 +82,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        component: [controller, worker, storage]
+        component: [controller]
     steps:
       - name: Download all digests
         uses: actions/download-artifact@v4
@@ -124,13 +124,10 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}@${arm64_digest}
 
           docker buildx imagetools inspect ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }}
-    outputs:
-      amd64_digest: ${{ steps.create-manifest.outputs.amd64_digest }}
-      arm64_digest: ${{ steps.create-manifest.outputs.arm64_digest }}
 
   attest:
     needs: [merge]
-    if: ${{ inputs.version }}
+    # if: ${{ inputs.version }}
     uses: ./.github/workflows/attestation.yml
     strategy:
       matrix:
