@@ -34,6 +34,12 @@ jobs:
       - name: Install cosign
         uses: sigstore/cosign-installer@v3.8.2
 
+      - name: Docker meta
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}
+
       - name: Login to GHCR
         uses: docker/login-action@v3
         with:
@@ -53,14 +59,14 @@ jobs:
         with:
           context: .
           file: ./Dockerfile.${{ matrix.component }}
+          labels: ${{ steps.meta.outputs.labels }}
           platforms: linux/${{ matrix.arch }}
           push: true
           sbom: true
           provenance: mode=max
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ github.ref_name }}-${{ matrix.arch }}
+          tags: ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}
           outputs: |
-            type=image,name=ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }},push=true,push-by-digest=true,name-canonical=true
+            type=image,push=true,push-by-digest=true,name-canonical=true
 
       - name: Export digest
         run: |
@@ -155,3 +161,30 @@ jobs:
   #     component: ${{ inputs.component }}
   #     arch: ${{ inputs.arch }}
   #     digest: ${{ needs.build.outputs.digest }}
+
+
+
+  # - name: Build and push ${{ matrix.component }} for ${{ matrix.arch }}
+  # id: build-image
+  # uses: docker/build-push-action@v6
+  # with:
+  #   context: .
+  #   file: ./Dockerfile.${{ matrix.component }}
+  #   platforms: linux/${{ matrix.arch }}
+  #   labels: ${{ steps.meta.outputs.labels }}
+  #   push: true
+  #   sbom: true
+  #   provenance: mode=max
+  #   tags: |
+  #     ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ github.ref_name }}-${{ matrix.arch }}
+  #   outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+
+
+  #   - name: Build and push by digest
+  #   id: build
+  #   uses: docker/build-push-action@v6
+  #   with:
+  #     platforms: ${{ matrix.platform }}
+  #     labels: ${{ steps.meta.outputs.labels }}
+  #     tags: ${{ env.REGISTRY_IMAGE }}
+  #     outputs: type=image,push-by-digest=true,name-canonical=true,push=true
