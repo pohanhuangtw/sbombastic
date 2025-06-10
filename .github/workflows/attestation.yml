@@ -2,10 +2,6 @@ name: Attestion generation
 on:
   workflow_call:
     inputs:
-      digest:
-        type: string
-        description: "Container image digest"
-        required: true
       component:
         type: string
         description: "SBOMbastic component"

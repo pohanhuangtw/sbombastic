@@ -137,13 +137,9 @@ jobs:
           - arch: amd64
             runner: ubuntu-latest
             platform: linux/amd64
-            digest: ${{ needs.merge.outputs.amd64_digest }}
           - arch: arm64
             runner: ubuntu-24.04-arm
             platform: linux/arm64
-            digest: ${{ needs.merge.outputs.arm64_digest }}
     with:
       component: ${{ matrix.component }}
       arch: ${{ matrix.arch }}
-      digest: ${{ matrix.digest }}
-      tag: ${{ inputs.version }}
