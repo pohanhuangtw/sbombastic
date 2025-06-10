@@ -50,20 +50,13 @@ jobs:
           DIGEST=$(cat ${{ inputs.component }}-${{ inputs.arch }}.txt)
           echo "📦 Loaded digest for ${{ inputs.component }}-${{ inputs.arch }}: ${DIGEST}"
           echo "DIGEST=${DIGEST}" >> "$GITHUB_ENV"
-      - name: Get multi-arch index digest
-        run: |
-          set -e
-          DIGEST=$(crane digest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}:${{ env.TAG_NAME }})
-          echo "📦 Loaded digest for latest, ${{ inputs.component }}-${{ inputs.arch }}: ${DIGEST}"
-          echo "MULTIARCH_DIGEST=$DIGEST" >> $GITHUB_ENV
       - name: Find attestation digest
         run: |
           set -e
-          DIGEST=$(crane manifest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ env.DIGEST }} |
-            jq -r '.manifests[]
-              | select(.annotations["vnd.docker.reference.type"] == "attestation-manifest")
-              | select(.platform.architecture == "${{ inputs.arch }}")
-              | .digest')
+          DIGEST=$(crane manifest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ env.DIGEST }} \
+          | jq -r '.manifests[]
+            | select(.annotations["vnd.docker.reference.type"] == "attestation-manifest")
+            | .digest')
           echo "ATTESTATION_MANIFEST_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
 
       - name: Find provenance manifest digest
