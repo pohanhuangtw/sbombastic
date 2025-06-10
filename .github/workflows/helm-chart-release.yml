@@ -36,8 +36,21 @@ on:
     branches:
       - main
 
+    paths:
+      - 'charts/**'
+
+  workflow_call:
 jobs:
+  bump-chart-version:
+    uses: ./.github/workflows/bump-chart-version.yaml
+    with:
+      chart-name: kubewarden-controller
+      chart-version: ${{ github.ref_name }}
+      chart-path: charts/kubewarden-controller
+
   release:
+    needs:
+      - bump-chart-version
     runs-on: ubuntu-latest
     permissions:
       id-token: write
