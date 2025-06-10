@@ -49,7 +49,7 @@ jobs:
       - name: Find attestation digest
         run: |
           set -e
-          DIGEST=$(crane manifest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ env.digest }} |
+          DIGEST=$(crane manifest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ env.DIGEST }} |
             jq -r '.manifests[]
               | select(.annotations["vnd.docker.reference.type"] == "attestation-manifest")
               | select(.platform.architecture == "${{ inputs.arch }}")
