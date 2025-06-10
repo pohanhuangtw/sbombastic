@@ -57,7 +57,14 @@ jobs:
           push: true
           sbom: true
           provenance: mode=max
-          outputs: type=image,push-by-digest=true,name-canonical=true,push=true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ github.ref_name }}-${{ matrix.arch }}
+          outputs: |
+            type=image,
+            name=ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }},
+            push=true,
+            push-by-digest=true,
+            name-canonical=true
 
       - name: Export digest
         run: |
