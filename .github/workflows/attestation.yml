@@ -32,29 +32,23 @@ jobs:
           registry: ghcr.io
           username: ${{ github.repository_owner }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      - name: Find platform digest
-        shell: bash
-        run: |
-          set -e
-          DIGEST=$(crane digest \
-            --platform "linux/${{ inputs.arch }}" \
-            ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ inputs.digest }})
-
-          echo "PLATFORM_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
-
       - name: Find attestation digest
         run: |
           set -e
-          DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ inputs.component }}@${{ inputs.digest }} \
-            | jq '.manifests[] | select(.annotations["vnd.docker.reference.type"]=="attestation-manifest") | select(.annotations["vnd.docker.reference.digest"]=="${{ env.PLATFORM_DIGEST }}") | .digest'
-          )
+          DIGEST=$(crane manifest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ inputs.digest }} |
+            jq -r '.manifests[]
+              | select(.annotations["vnd.docker.reference.type"] == "attestation-manifest")
+              | select(.platform.architecture == "${{ inputs.arch }}")
+              | .digest')
           echo "ATTESTATION_MANIFEST_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
 
       - name: Find provenance manifest digest
         run: |
           set -e
-          DIGEST=$(crane manifest ghcr.io/${{github.repository_owner}}/sbombastic/${{ inputs.component }}@${{ env.ATTESTATION_MANIFEST_DIGEST}} | \
-            jq '.layers[] | select(.annotations["in-toto.io/predicate-type"] == "https://slsa.dev/provenance/v0.2") | .digest')
+          DIGEST=$(crane manifest ghcr.io/${{ github.repository_owner }}/sbombastic/${{ inputs.component }}@${{ env.ATTESTATION_MANIFEST_DIGEST }} |
+                      jq -r '.layers[]
+                        | select(.annotations["in-toto.io/predicate-type"] == "https://slsa.dev/provenance/v0.2")
+                        | .digest')
           echo "PROVENANCE_DIGEST=${DIGEST}" >> "$GITHUB_ENV"
 
       - name: Sign provenance manifest

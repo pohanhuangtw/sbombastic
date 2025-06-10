@@ -83,9 +83,21 @@ jobs:
     needs: [build]
     if: ${{ inputs.version }}
     uses: ./.github/workflows/attestation.yml
+
+    strategy:
+      matrix:
+        component: [controller, worker, storage]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
     with:
-      component: ${{ inputs.component }}
-      arch: ${{ inputs.arch }}
+      component: ${{ matrix.component }}
+      arch: ${{ matrix.arch }}
       digest: ${{ needs.build.outputs.digest }}
   merge:
     runs-on: ubuntu-latest
