@@ -131,7 +131,7 @@ jobs:
     uses: ./.github/workflows/attestation.yml
     strategy:
       matrix:
-        component: [controller, worker, storage]
+        component: [controller]
         arch: [amd64, arm64]
         include:
           - arch: amd64
