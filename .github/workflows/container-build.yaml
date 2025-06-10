@@ -77,28 +77,6 @@ jobs:
           name: digest-${{ matrix.component }}-${{ matrix.arch }}
           path: ${{ runner.temp }}/digests/*.txt
           retention-days: 1
-    outputs:
-      digest: ${{ steps.build-image.outputs.digest }}
-  attest:
-    needs: [build]
-    if: ${{ inputs.version }}
-    uses: ./.github/workflows/attestation.yml
-
-    strategy:
-      matrix:
-        component: [controller, worker, storage]
-        arch: [amd64, arm64]
-        include:
-          - arch: amd64
-            runner: ubuntu-latest
-            platform: linux/amd64
-          - arch: arm64
-            runner: ubuntu-24.04-arm
-            platform: linux/arm64
-    with:
-      component: ${{ matrix.component }}
-      arch: ${{ matrix.arch }}
-      digest: ${{ needs.build.outputs.digest }}
   merge:
     runs-on: ubuntu-latest
     needs: [build]
@@ -134,6 +112,7 @@ jobs:
           echo TAG_NAME=${{ inputs.version }} >> $GITHUB_ENV
 
       - name: Create and push multi-arch manifest for ${{ matrix.component }}
+        id: create-manifest
         working-directory: ${{ runner.temp }}/digests
         run: |
           amd64_digest=$(cat ${{ matrix.component }}-amd64.txt)
@@ -145,3 +124,28 @@ jobs:
             ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}@${arm64_digest}
 
           docker buildx imagetools inspect ghcr.io/${{ github.repository_owner }}/sbombastic/${{ matrix.component }}:${{ env.TAG_NAME }}
+    outputs:
+      amd64_digest: ${{ steps.create-manifest.outputs.amd64_digest }}
+      arm64_digest: ${{ steps.create-manifest.outputs.arm64_digest }}
+
+  attest:
+    needs: [merge]
+    if: ${{ inputs.version }}
+    uses: ./.github/workflows/attestation.yml
+    strategy:
+      matrix:
+        component: [controller, worker, storage]
+        arch: [amd64, arm64]
+        include:
+          - arch: amd64
+            runner: ubuntu-latest
+            platform: linux/amd64
+            digest: ${{ needs.merge.outputs.amd64_digest }}
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+            platform: linux/arm64
+            digest: ${{ needs.merge.outputs.arm64_digest }}
+    with:
+      component: ${{ matrix.component }}
+      arch: ${{ matrix.arch }}
+      digest: ${{ matrix.digest }}
