@@ -146,3 +146,4 @@ jobs:
       component: ${{ matrix.component }}
       arch: ${{ matrix.arch }}
       digest: ${{ matrix.digest }}
+      tag: latest
