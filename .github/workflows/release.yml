@@ -7,25 +7,10 @@ on:
 
 jobs:
   build:
-      uses: ./.github/workflows/container-build.yaml
-      strategy:
-        matrix:
-          component: [controller, worker, storage]
-          arch: [amd64, arm64]
-          include:
-            - arch: amd64
-              runner: ubuntu-latest
-              platform: linux/amd64
-            - arch: arm64
-              runner: ubuntu-24.04-arm
-              platform: linux/arm64
-      with:
-        version: ${{ github.ref_name }}
-        component: ${{ matrix.component }}
-        arch: ${{ matrix.arch }}
-        runner: ${{ matrix.runner }}
-        platform: ${{ matrix.platform }}
-      secrets: inherit
+    uses: ./.github/workflows/container-build.yaml
+    with:
+      version: ${{ github.ref_name }}
+    secrets: inherit
   create-release:
     needs: [build]
     runs-on: ubuntu-latest
