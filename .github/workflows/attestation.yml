@@ -36,13 +36,14 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: ${{ runner.temp }}/digests
-          pattern: digest-${{ inputs.component }}-${{ inputs.arch }}
+          pattern: digest-${{ inputs.component }}-*
           merge-multiple: true
 
       - name: Retrieve digest
+        working-directory: ${{ runner.temp }}/digests
         run: |
           set -e
-          DIGEST=$(cat ${{ runner.temp }}/digests/digest-${{ inputs.component }}-${{ inputs.arch }}.txt)
+          DIGEST=$(cat ${{ inputs.component }}-${{ inputs.arch }}.txt)
           echo "DIGEST=${DIGEST}" >> "$GITHUB_ENV"
 
       - name: Find attestation digest
