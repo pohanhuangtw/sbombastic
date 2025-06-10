@@ -13,7 +13,7 @@ jobs:
   build:
     strategy:
       matrix:
-        component: [controller]
+        component: [controller, worker, storage]
         arch: [amd64, arm64]
         include:
           - arch: amd64
@@ -82,7 +82,7 @@ jobs:
     needs: [build]
     strategy:
       matrix:
-        component: [controller]
+        component: [controller, worker, storage]
     steps:
       - name: Download all digests
         uses: actions/download-artifact@v4
@@ -127,11 +127,11 @@ jobs:
 
   attest:
     needs: [merge]
-    # if: ${{ inputs.version }}
+    if: ${{ inputs.version }}
     uses: ./.github/workflows/attestation.yml
     strategy:
       matrix:
-        component: [controller]
+        component: [controller, worker, storage]
         arch: [amd64, arm64]
         include:
           - arch: amd64
@@ -146,4 +146,4 @@ jobs:
       component: ${{ matrix.component }}
       arch: ${{ matrix.arch }}
       digest: ${{ matrix.digest }}
-      tag: latest
+      tag: ${{ inputs.version }}

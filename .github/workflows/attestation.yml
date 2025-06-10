@@ -14,10 +14,6 @@ on:
         type: string
         description: "Architecture"
         required: true
-      tag:
-        type: string
-        description: "Container image tag"
-        required: true
 jobs:
   attest:
     name: Sign attestations and upload as artifacts
