@@ -1,0 +1,40 @@
+sources:
+  sbombastic-release:
+    name: "Get latest sbombastic version"
+    kind: "githubrelease"
+    spec:
+      owner: '{{requiredEnv "GITHUB_OWNER"}}'
+      repository: '{{requiredEnv "GITHUB_REPOSITORY"}}'
+      token: '{{requiredEnv "GITHUB_TOKEN"}}'
+      versionfilter:
+        kind: "semver"
+
+targets:
+  update_appversion:
+    name: Update Helm chart appVersion
+    kind: yaml
+    sourceID: sbombastic-release
+    spec:
+      file: ../../helm/Chart.yaml
+      key: appVersion
+  update_controller_version:
+    name: Update Helm chart controller version
+    kind: yaml
+    sourceID: sbombastic-release
+    spec:
+      file: ../../helm/values.yaml
+      key: controller.image.tag
+  update_storage_version:
+    name: Update Helm chart storage version
+    kind: yaml
+    sourceID: sbombastic-release
+    spec:
+      file: ../../helm/values.yaml
+      key: storage.image.tag
+  update_worker_version:
+    name: Update Helm chart worker version
+    kind: yaml
+    sourceID: sbombastic-release
+    spec:
+      file: ../../helm/values.yaml
+      key: worker.image.tag
