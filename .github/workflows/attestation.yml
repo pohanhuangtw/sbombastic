@@ -38,8 +38,8 @@ jobs:
 
           mkdir -p $INSTALL_DIR
 
-          curl -sL https://github.com/google/go-containerregistry/releases/download/v${{ inputs.version }}/go-containerregistry_Linux_x86_64.tar.gz -o $INSTALL_DIR/crane.tar.gz
-          echo "${{ inputs.checksum }}  $INSTALL_DIR/crane.tar.gz" | sha256sum -c
+          curl -sL https://github.com/google/go-containerregistry/releases/download/${{ inputs.version }}/go-containerregistry_Linux_x86_64.tar.gz -o $INSTALL_DIR/crane.tar.gz
+          echo "${{ inputs.checksum }} $INSTALL_DIR/crane.tar.gz" | sha256sum -c
           tar xvf $INSTALL_DIR/crane.tar.gz -C $INSTALL_DIR
           rm $INSTALL_DIR/crane.tar.gz
 
