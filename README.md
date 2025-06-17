@@ -1,6 +1,6 @@
 # SBOMbastic
 
-A SBOM-centric security scanner for Kubernetes, test add breakin chnarrr
+A SBOM-centric security scanner for Kubernetes, test add breakin chnarrrqq
 
 This is still being developed. For additional dtetails, please refer to the [RFC](docs/rfc).
 
