@@ -31,8 +31,9 @@
 name: Release helm chart
 
 on:
-  workflow_dispatch:
-  workflow_call:
+  push:
+    branches:
+      - main
 jobs:
   release:
     runs-on: ubuntu-latest
@@ -42,19 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
-
-      - name: Add nats repository for dependency
+      - name: Configure Git
         run: |
-          helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-          helm repo update
+          git config user.name "$GITHUB_ACTOR"
+          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
-        with:
-          install_only: true
         env:
-          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Force package & upload & index
-        run: |
-          cr package helm/ --config cr.yaml
-          cr upload  --config cr.yaml --push
-          cr index   --config cr.yaml --push
+          CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
