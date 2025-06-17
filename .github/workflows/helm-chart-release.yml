@@ -44,7 +44,7 @@ jobs:
         with: { fetch-depth: 0 }
 
       - name: Install chart-releaser
-        uses: helm/chart-releaser-action@v1
+        uses: helm/chart-releaser-action@v3
         with:
           config: cr.yaml
           charts_dir:   helm
