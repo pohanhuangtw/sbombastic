@@ -1,7 +1,7 @@
 name: Update SBOMbastic chart versions
 
 sources:
-  sbombastic-helm-version:
+  chartVersion:
     name: "Get latest sbombastic helm version"
     kind: yaml
     transformers:
@@ -9,7 +9,7 @@ sources:
     spec:
       file: helm/Chart.yaml
       key: $.version
-  sbombastic-release:
+  releaseVersion:
     name: "Get latest sbombastic version"
     kind: githubrelease
     spec:
@@ -39,14 +39,14 @@ scms:
 
 actions:
   default:
-    title: 'chore: Helm chart {{ source "sbombastic-release" }} release'
+    title: 'chore: Helm chart {{ source "releaseVersion" }} release'
     kind: github/pullrequest
     scmid: default
     spec:
       automerge: false
       mergemethod: squash
       description: |
-        Automatic Helm chart {{ source "sbombastic-release" }} update.
+        Automatic Helm chart {{ source "releaseVersion" }} update.
         This PR has been created by the automation used to automatically update the Helm charts when SBOMbastic is released or helm chart content is updated.
 
         REMEMBER IF YOU WANT TO MERGE IN A SINGLE COMMIT CHANGES AND VERSION BUMP, YOU MUST SQUASH THE COMMIT BEFORE MERGING THIS PR!
@@ -59,7 +59,7 @@ targets:
     scmid: default
     name: Update Helm chart version
     kind: yaml
-    sourceid: sbombastic-helm-version
+    sourceid: chartVersion
     spec:
       file: helm/Chart.yaml
       key: $.version
@@ -67,7 +67,7 @@ targets:
     scmid: default
     name: Update Helm chart annotations upstream version
     kind: yaml
-    sourceid: sbombastic-release
+    sourceid: releaseVersion
     spec:
       file: helm/Chart.yaml
       key: $.annotations.catalog\.cattle\.io/upstream-version
@@ -75,7 +75,7 @@ targets:
     scmid: default
     name: Update Helm chart appVersion
     kind: yaml
-    sourceid: sbombastic-release
+    sourceid: releaseVersion
     spec:
       file: helm/Chart.yaml
       key: $.appVersion
@@ -83,7 +83,7 @@ targets:
     scmid: default
     name: Update Helm chart controller version
     kind: yaml
-    sourceid: sbombastic-release
+    sourceid: releaseVersion
     spec:
       file: helm/values.yaml
       key: $.controller.image.tag # TODO: change to controller.image.tag
@@ -91,7 +91,7 @@ targets:
     scmid: default
     name: Update Helm chart storage version
     kind: yaml
-    sourceid: sbombastic-release
+    sourceid: releaseVersion
     spec:
       file: helm/values.yaml
       key: $.storage.image.tag
@@ -99,7 +99,7 @@ targets:
     scmid: default
     name: Update Helm chart worker version
     kind: yaml
-    sourceid: sbombastic-release
+    sourceid: releaseVersion
     spec:
       file: helm/values.yaml
       key: $.worker.image.tag

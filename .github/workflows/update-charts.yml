@@ -16,4 +16,4 @@ jobs:
         env:
           UPDATECLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           UPDATECLI_GITHUB_OWNER: ${{ github.repository_owner }}
-        run: "updatecli apply --config ./updatecli/updatecli.d/sbombastic-update.yaml --values updatecli/values.yaml"
+        run: "updatecli apply --config ./updatecli/updatecli.d/sbombastic-update.yaml --values updatecli/values.yaml --debug"
