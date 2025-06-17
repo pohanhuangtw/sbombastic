@@ -38,8 +38,8 @@ scms:
         footers: "Signed-off-by: SBOMbastic bot <cncf-sbombastic-maintainers@lists.cncf.io>"
 
 actions:
-  createUpdatePR:
-    title: Helm chart {{ source "sbombastic-release" }} release
+  default:
+    title: 'feat: Helm chart {{ source "sbombastic-release" }} release'
     kind: github/pullrequest
     scmid: default
     spec:
@@ -47,7 +47,7 @@ actions:
       mergemethod: squash
       description: |
         Automatic Helm chart {{ source "sbombastic-release" }} update.
-        This PR has been created by the automation used to automatically update the Helm charts when some Kubewarden component is released
+        This PR has been created by the automation used to automatically update the Helm charts when SBOMbastic is released or helm chart content is updated.
 
         REMEMBER IF YOU WANT TO MERGE IN A SINGLE COMMIT CHANGES AND VERSION BUMP, YOU MUST SQUASH THE COMMIT BEFORE MERGING THIS PR!
       draft: false
@@ -56,6 +56,7 @@ actions:
 
 targets:
   update_helm_version:
+    scmid:    default
     name: Update Helm chart version
     kind: yaml
     sourceid: sbombastic-helm-version
@@ -63,6 +64,7 @@ targets:
       file: helm/Chart.yaml
       key: $.version
   update_appversion:
+    scmid: default
     name: Update Helm chart appVersion
     kind: yaml
     sourceid: sbombastic-release
@@ -70,6 +72,7 @@ targets:
       file: helm/Chart.yaml
       key: $.appVersion
   update_controller_version:
+    scmid: default
     name: Update Helm chart controller version
     kind: yaml
     sourceid: sbombastic-release
@@ -77,6 +80,7 @@ targets:
       file: helm/values.yaml
       key: $.controller.image.tag # TODO: change to controller.image.tag
   update_storage_version:
+    scmid: default
     name: Update Helm chart storage version
     kind: yaml
     sourceid: sbombastic-release
@@ -84,6 +88,7 @@ targets:
       file: helm/values.yaml
       key: $.storage.image.tag
   update_worker_version:
+    scmid: default
     name: Update Helm chart worker version
     kind: yaml
     sourceid: sbombastic-release
