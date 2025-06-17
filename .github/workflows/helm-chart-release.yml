@@ -32,222 +32,38 @@ name: Release helm chart
 
 on:
   workflow_dispatch:
-  push:
-    branches:
-      - main
-
-    paths:
-      - 'charts/**'
-
   workflow_call:
 jobs:
-  bump-chart-version:
-    uses: ./.github/workflows/bump-chart-version.yaml
-    with:
-      chart-name: kubewarden-controller
-      chart-version: ${{ github.ref_name }}
-      chart-path: charts/kubewarden-controller
-
   release:
-    needs:
-      - bump-chart-version
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      packages: write
-      contents: write
-      attestations: write
       pages: write
+      contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          fetch-depth: 0
-
-      - name: Configure Git
-        run: |
-          git config user.name "$GITHUB_ACTOR"
-          git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
-      - name: Check that the contents of common-values.yaml are included in values.yaml
-        run: |
-          make check-common-values
-
-      - name: Install cosign
-        uses: sigstore/cosign-installer@3454372f43399081ed03b604cb2d021dabca52bb # v3.8.2
-
-      - name: Generate container image files
-        run: |
-          make generate-images-file
-
-      - name: Generate policies files
-        run: |
-          make generate-policies-file
-
-      - name: Generate changelog files
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          make generate-changelog-files
-
-      - name: Add dependency repo required to release the controller chart
-        run: |
-          helm repo add policy-reporter https://kyverno.github.io/policy-reporter
-          helm repo update
-
-      - name: Login to GitHub Container Registry
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772 # v3.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.repository_owner }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
 
       - name: Install chart-releaser
-        uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
+        uses: helm/chart-releaser-action@v1
         with:
-          install_only: true
-
-      - name: Release Helm charts
-        shell: bash
+          config: cr.yaml
+          charts_dir:   helm
+          # package_path: .cr-release-packages
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Chart Releaser index & push
         run: |
-          set -ex
+          cr index --config cr.yaml --push
 
-          OWNER=${{ github.repository_owner }}
-          REPO=helm-charts
-          CONFIG_FILE=cr.yaml
-          PACKAGE_PATH=.cr-release-packages
-          CR_TOKEN=${{ secrets.GITHUB_TOKEN }}
+      # 以下三步是官方推荐的「新 Pages 发布工作流」
+      - name: Configure Pages
+        uses: actions/configure-pages@v3
 
-          rm -rf ${PACKAGE_PATH}
-          # Release each chart in the charts directory
-          for chart in $(find charts -maxdepth 1 -mindepth 1  -type d ); do
-            chart_name=$(basename $chart)
-            chart_path=${PACKAGE_PATH}/${chart_name}-*.tgz
-
-            cr package charts/${chart_name} --config ${CONFIG_FILE} --package-path ${PACKAGE_PATH}
-
-            # check if the chart version is already release. If so, do nothing
-            chart_version=$(helm show chart $chart_path | yq -r '.version')
-            if gh --repo ${OWNER}/${REPO} release view $chart_name-$chart_version; then
-              echo "Chart $chart_name-$chart_version already released. No need to release again."
-              rm $chart_path
-              continue
-            fi
-
-          done
-
-          # Upload the charts if the .cr-release-packages directory is not empty
-          if [ "$(ls ${PACKAGE_PATH})" ]; then
-            # Upload the chart to the GitHub release
-            cr upload --config ${CONFIG_FILE} -o ${OWNER} -r ${REPO} -c "$(git rev-parse HEAD)" --skip-existing  --make-release-latest=false --token ${CR_TOKEN} --push
-            echo "Charts released!"
-
-            # Reindex the repository
-            cr index --config ${CONFIG_FILE} -o ${OWNER} -r ${REPO} --push --token ${CR_TOKEN} --index-path .
-            echo "Repository indexed!"
-
-            # Publish the charts to the OCI registry and sign them
-            REGISTRY="ghcr.io/$GITHUB_REPOSITORY_OWNER/charts"
-            echo "REGISTRY=${REGISTRY}" >> "$GITHUB_ENV"
-            for chart_path in $(find ${PACKAGE_PATH} -maxdepth 1 -mindepth 1 ); do
-              echo "Pushing chart $chart_path to ghcr.io"
-              chart_name=$(helm show chart ${chart_path} | yq ".name")
-              push_output=$(helm push $chart_path "oci://$REGISTRY" 2>&1)
-              chart_url=$(echo $push_output | sed -n 's/Pushed: \(.*\):.* Digest: \(.*\)$/\1\@\2/p')
-              digest=$(echo $push_output | sed -n 's/Pushed: \(.*\):.* Digest: \(.*\)$/\2/p')
-              echo "DIGEST_${chart_name}=${digest}" >> "$GITHUB_ENV"
-              cosign sign --yes "$chart_url"
-              echo "Chart $chart_name signed and pushed to ghcr.io"
-            done
-          fi
-
-      - name: Prepare GH pages readme & artifacthub-repo.yml
-        run: |
-          mkdir -p ./to-gh-pages
-          cat charts/kubewarden-controller/README.md >> charts/README.md
-          echo >> charts/README.md
-          cat charts/kubewarden-defaults/README.md >> charts/README.md
-          echo >> charts/README.md
-          cat charts/kubewarden-crds/README.md >> charts/README.md
-          cp -f charts/README.md ./to-gh-pages/
-          cp -f artifacthub-repo.yml ./to-gh-pages/
-
-      - name: Configure Git
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git config --global user.name "$GITHUB_ACTOR"
-          git config --global user.email "$GITHUB_ACTOR@users.noreply.github.com"
-          git config --global url."https://${GH_TOKEN}:x-oauth-basic@github.com/".insteadOf "https://github.com/"
-
-      - name: Clone existing gh-pages branch and commit
-        run: |
-          git fetch origin gh-pages
-          git worktree add gh-pages-worktree gh-pages
-          cp -r ./to-gh-pages/* gh-pages-worktree/
-          cd gh-pages-worktree
-          git add .
-          git commit -m "Update GitHub Pages content" || echo "No changes to commit"
-          git push origin gh-pages
-
-      - name: Upload images and policies file
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          # .cr-release-packages is the directory used by the Helm releaser from a previous step
-          chart_directory=.cr-release-packages
-          if [ ! -d "$chart_directory" ]; then
-            echo "$chart_directory does not exist. Assuming no charts update"
-            exit 0
-          fi
-
-          charts=$(find ./charts -maxdepth 1 -mindepth 1 -type d)
-          asset_name=""
-          for chart in $charts; do
-            chart_name=$(helm show chart $chart | yq -r '.name' )
-            chart_version=$(helm show chart $chart | yq -r '.version')
-            asset_name="${asset_name}_${chart_name}-${chart_version}"
-          done
-          image_asset_name="${asset_name:1}_images.txt"
-          cp imagelist.txt $image_asset_name
-
-          charts=$(find $chart_directory -maxdepth 1 -mindepth 1 -type f)
-          for chart in $charts; do
-            chart_name=$(helm show chart $chart | yq -r '.name' )
-            chart_version=$(helm show chart $chart | yq -r '.version')
-            if [[ $chart_name != *"-crds" ]]; then
-              gh release upload $chart_name-$chart_version $image_asset_name --clobber
-            fi
-            if [[ $chart_name == *"-defaults" ]]; then
-              cp "./charts/kubewarden-defaults/policylist.txt" "./charts/kubewarden-defaults/${asset_name:1}_policylist.txt"
-              gh release upload $chart_name-$chart_version "./charts/kubewarden-defaults/${asset_name:1}_policylist.txt" --clobber
-            fi
-          done
-
-      - name: Generate provenance attestation for kubewarden-crds chart and push to OCI
-        uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2.3.0
-        if: env.DIGEST_kubewarden-crds != ''
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v2
         with:
-          push-to-registry: true
-          subject-name: ${{ env.REGISTRY}}/kubewarden-crds
-          subject-digest: ${{ env.DIGEST_kubewarden-crds }}
+          path: gh-pages
 
-      - name: Generate provenance attestation for kubewarden-controller chart and push to OCI
-        uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2.3.0
-        if: env.DIGEST_kubewarden-controller != ''
-        with:
-          push-to-registry: true
-          subject-name: ${{ env.REGISTRY}}/kubewarden-controller
-          subject-digest: ${{ env.DIGEST_kubewarden-controller }}
-
-      - name: Generate provenance attestation for kubewarden-defaults chart and push to OCI
-        uses: actions/attest-build-provenance@db473fddc028af60658334401dc6fa3ffd8669fd # v2.3.0
-        if: env.DIGEST_kubewarden-defaults != ''
-        with:
-          push-to-registry: true
-          subject-name: ${{ env.REGISTRY}}/kubewarden-defaults
-          subject-digest: ${{ env.DIGEST_kubewarden-defaults }}
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v2
