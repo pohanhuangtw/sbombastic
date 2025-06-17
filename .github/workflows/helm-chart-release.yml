@@ -45,9 +45,5 @@ jobs:
 
       - name: Install chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
-        with:
-          config: cr.yaml
-          charts_dir: helm
-          # package_path: .cr-release-packages
         env:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
