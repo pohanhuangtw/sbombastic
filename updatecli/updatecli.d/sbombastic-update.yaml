@@ -56,7 +56,7 @@ actions:
 
 targets:
   update_helm_version:
-    scmid:    default
+    scmid: default
     name: Update Helm chart version
     kind: yaml
     sourceid: sbombastic-helm-version
