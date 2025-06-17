@@ -97,3 +97,5 @@ jobs:
               prerelease: isPreRelease,
               make_latest: !isPreRelease
             });
+      - name: Update charts
+        uses: ./.github/workflows/update-charts.yml
