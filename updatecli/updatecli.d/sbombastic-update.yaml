@@ -32,14 +32,14 @@ scms:
       username: "{{ requiredEnv .github.user }}"
       branch: "{{ .github.branch }}"
       commitmessage:
-        type: "fix"
+        type: "chore"
         title: "Update SBOMbastic Helm charts"
         hidecredit: true
-        footers: "Signed-off-by: SBOMbastic bot <cncf-sbombastic-maintainers@lists.cncf.io>"
+        footers: "Signed-off-by: SBOMbastic bot."
 
 actions:
   default:
-    title: 'feat: Helm chart {{ source "sbombastic-release" }} release'
+    title: 'chore: Helm chart {{ source "sbombastic-release" }} release'
     kind: github/pullrequest
     scmid: default
     spec:
