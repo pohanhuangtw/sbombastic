@@ -70,7 +70,7 @@ targets:
     sourceid: sbombastic-release
     spec:
       file: helm/Chart.yaml
-      key: $.annotations.catalog.cattle.io/upstream-version
+      key: $.annotations.catalog\.cattle\.io/upstream-version
   update_appversion:
     scmid: default
     name: Update Helm chart appVersion
