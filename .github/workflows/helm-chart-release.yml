@@ -1,33 +1,3 @@
-# This action releases the kubewarden Helm charts.
-# The action must run on each commit done against main, however
-# a new release will be performed **only** when a change occurs inside
-# of the `charts` directory.
-#
-# When the helm charts are changed, this action will, for each chart:
-#   * Create a new GitHub release: e.g. kubwarden-controller-chart.
-#   * This release has a kubwarden-controller-chart.tar.gz asset associated with
-#     it. This is the actual Helm chart.
-#   * Update the `index.yaml` file inside of the `gh-pages` branch. This is the
-#     index of our https Helm chart repository, which we serve through GitHub pages.
-#   * Update the docs shown at https://charts.kubewarden.io, on the `gh-pages`
-#     branch. This is the README files of the chart(s), served also through
-#     GitHub pages.
-#   * Push the chart, signed and with attestation, to ghcr.io OCI registry.
-#
-# = FAQ
-#
-# == Why don't we run this action only when a tag like `v*` is created?
-#
-# Running the action only when a "release tag" is created will not produce
-# a helm chart. That happens because the code which determines if something
-# changed inside of the `charts` directory will not find any changes.
-#
-# == The action is just a "wrapper" around the official `github.com/helm/chart-releaser` tool, can't we just create our own action?
-#
-# Yes, we even got that to work. However, what we really want to do is the
-# ability to tag the releases of the kubewarden-controller and its helm chart
-# in an independent way. Which the official GitHub action already does.
-
 name: Release helm chart
 
 on:
