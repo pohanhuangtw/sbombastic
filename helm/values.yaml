@@ -21,7 +21,7 @@ storage:
 worker:
   image:
     repository: ghcr.io/rancher-sandbox/sbombastic/worker
-    tag: v0.0.24
+    tag: v0.0.25
     pullPolicy: IfNotPresent
   replicas: 3
   logLevel: "info"
