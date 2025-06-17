@@ -1,12 +1,6 @@
 name: Update helm charts
 on:
-  workflow_dispatch:
   workflow_call:
-  push:
-    branches:
-      - main
-    paths:
-      - helm/**
 jobs:
   update-sbombastic-charts:
     name: Update SBOMbastic charts
