@@ -36,3 +36,20 @@ jobs:
           packages_with_index: true
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
+
+      - name: Prepare GH pages readme
+        run: |
+          mkdir -p ./to-gh-pages
+          cat helm/app-readme.md >> helm/README-to-gh-pages.md
+          echo >> helm/README-to-gh-pages.md
+          cp -f helm/README-to-gh-pages.md ./to-gh-pages/
+
+      - name: Clone existing gh-pages branch and commit
+        run: |
+          git fetch origin gh-pages
+          git worktree add gh-pages-worktree gh-pages
+          cp -r ./to-gh-pages/* gh-pages-worktree/
+          cd gh-pages-worktree
+          git add .
+          git commit -m "Update GitHub Pages content" || echo "No changes to commit"
+          git push origin gh-pages
