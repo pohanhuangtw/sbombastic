@@ -1,0 +1,31 @@
+apiVersion: v1
+entries:
+  sbombastic:
+  - annotations:
+      catalog.cattle.io/certified: rancher
+      catalog.cattle.io/display-name: SBOMbastic
+      catalog.cattle.io/namespace: cattle-sbombastic-system
+      catalog.cattle.io/os: linux
+      catalog.cattle.io/provides-gvr: sbombastic.rancher.io/v1
+      catalog.cattle.io/rancher-version: '>= 2.6.0-0 <= 2.12.100-0'
+      catalog.cattle.io/release-name: rancher-sbombastic
+      catalog.cattle.io/requests-cpu: 500m
+      catalog.cattle.io/requests-memory: 128Mi
+      catalog.cattle.io/type: cluster-tool
+      catalog.cattle.io/ui-component: sbombastic
+      catalog.cattle.io/upstream-version: v0.0.25
+    apiVersion: v2
+    appVersion: v0.0.25
+    created: "2025-06-18T02:05:51.431655091Z"
+    dependencies:
+    - name: nats
+      repository: https://nats-io.github.io/k8s/helm/charts/
+      version: 1.3.7
+    description: A Helm chart for Kubernetesb
+    digest: 4f67375af42243fcefba295c09c90e0f246cb274882b4f7a5358b6e11f63894e
+    name: sbombastic
+    type: application
+    urls:
+    - sbombastic-0.1.11.tgz
+    version: 0.1.11
+generated: "2025-06-18T02:05:51.431663908Z"
