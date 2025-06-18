@@ -40,9 +40,9 @@ jobs:
       - name: Prepare GH pages readme
         run: |
           mkdir -p ./to-gh-pages
-          cat helm/app-readme.md >> helm/README-to-gh-pages.md
-          echo >> helm/README-to-gh-pages.md
-          cp -f helm/README-to-gh-pages.md ./to-gh-pages/
+          (cat helm/app-readme.md && echo && cat helm/README.md) > helm/README.tmp
+          mv helm/README.tmp helm/README.md
+          cp -f helm/README.md ./to-gh-pages/
 
       - name: Clone existing gh-pages branch and commit
         run: |
