@@ -1,2 +1,2 @@
-release-notes-file: CHANGELOG.md
-generate-release-notes: true
+packages_with_index: true
+charts_dir: .
