@@ -3,5 +3,4 @@ github:
   token: "UPDATECLI_GITHUB_TOKEN"
   branch: "main"
   author: "SBOMbastic bot"
-  email: "sbombastic-maintainers@lists.rancher.io"
   user: "UPDATECLI_GITHUB_OWNER"
