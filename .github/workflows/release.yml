@@ -98,3 +98,7 @@ jobs:
               prerelease: isPreRelease,
               make_latest: !isPreRelease
             });
+  update-charts:
+    needs: [create-release]
+    uses: ./.github/workflows/update-charts.yml
+    secrets: inherit
