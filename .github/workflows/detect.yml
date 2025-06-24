@@ -1,0 +1,31 @@
+name: Bump Chart Version
+
+on:
+  workflow_dispatch:
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write       # 如果你要自動 commit/PR
+      pull-requests: write  # 需要開 PR
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Updatecli
+        id: updatecli
+        uses: updatecli/updatecli-action@v2
+
+      - name: detect upstream version
+        run: |
+            changed=$(updatecli diff --config updatecli/updatecli.d/helm-chart-update-detect.yaml --values updatecli/values.yaml | \
+            sed -n '/Pipeline(s) run:/,/^$/p' | \
+            grep 'Changed:' | \
+            sed -E 's/.*Changed:[[:space:]]*([0-9]+).*/\1/')
+            if [ "$changed" -gt 0 ]; then
+            echo "changed=true"
+            else
+            echo "changed=false"
+            fi
+      # 如果 newValue != oldValue，就可以在這裡接著做 cr package / release

@@ -4,13 +4,46 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'charts/**'
 
 concurrency:
   group: "release"
   cancel-in-progress: false
 
 jobs:
-  release:
+  detect-chart-update:
+    runs-on: ubuntu-latest
+    outputs:
+      version_bumped: ${{ steps.check_ver.outputs.bumped }}
+    steps:
+      - name: Checkout with history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Check Chart version bump
+        id: check_ver
+        run: |
+          CHART_PATH="charts/sbombastic/Chart.yaml"
+          base=$(git show HEAD~1:"$CHART_PATH" | grep '^version:' | awk '{print $2}')
+          curr=$(grep '^version:' "$CHART_PATH" | awk '{print $2}')
+          echo "base version = $base, curr version = $curr"
+          if [ "$base" != "$curr" ]; then
+            echo "bumped=true" >> $GITHUB_OUTPUT
+          else
+            echo "bumped=false" >> $GITHUB_OUTPUT
+          fi
+  bump-chart-version:
+    needs: [detect-chart-update]
+    if: needs.detect-chart-update.outputs.charts_changed == 'true' && needs.detect-chart-update.outputs.version_bumped == 'true'
+    uses: ./.github/workflows/update-charts.yml
+    permissions:
+      contents: write # for updatecli to update the repository
+      pull-requests: write # for updatecli to create a PR
+    secrets: inherit
+
+  release-chart:
+    needs: [detect-chart-update]
     permissions:
       contents: write # chart-releaser needs to release the charts to the repository
     runs-on: ubuntu-latest

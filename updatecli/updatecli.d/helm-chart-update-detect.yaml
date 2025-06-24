@@ -1,0 +1,32 @@
+name: Detect SBOMbastic chart versions if they need to be updated
+
+sources:
+  chartVersion:
+    name: "Get latest sbombastic helm version"
+    kind: yaml
+    scmid: upstream
+    transformers:
+      - semverinc: patch
+    spec:
+      file: charts/sbombastic/Chart.yaml
+      key: $.version
+
+scms:
+  upstream:
+    kind: github
+    spec:
+      user: rancher
+      owner: rancher-sandbox
+      repository: sbombastic
+      branch: main
+      token: "{{ requiredEnv .github.token }}"
+      username: "{{ .github.user }}"
+
+targets:
+  update_helm_version:
+    name: Update Helm chart version
+    kind: yaml
+    sourceid: chartVersion
+    spec:
+      file: charts/sbombastic/Chart.yaml
+      key: $.version
