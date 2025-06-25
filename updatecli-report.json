@@ -1,0 +1,68 @@
+
+
++++++++++++
++ PREPARE +
++++++++++++
+
+Loading Pipeline "updatecli/updatecli.d/helm-chart-update-detect.yaml"
+
+SCM repository retrieved: 1
+
+
+++++++++++++++++++
++ AUTO DISCOVERY +
+++++++++++++++++++
+
+
+
+++++++++++++
++ PIPELINE +
+++++++++++++
+
+
+
+###############################################################
+# DETECT SBOMBASTIC CHART VERSIONS IF THEY NEED TO BE UPDATED #
+###############################################################
+
+source: source#chartVersion
+-------------------
+✔ value "0.1.0-alpha1" found for key "$.version" in the yaml file "charts/sbombastic/Chart.yaml"
+[transformers]
+✔ Result correctly transformed from "0.1.0-alpha1" to "0.1.0"
+
+target: target#update_helm_version
+--------------------------
+
+**Dry Run enabled**
+
+✔ - no change detected:
+	* key "$.version" already set to "0.1.0", from file "charts/sbombastic/Chart.yaml"
+
+
+ACTIONS
+========
+
+
+=============================
+
+SUMMARY:
+
+
+
+✔ Detect SBOMbastic chart versions if they need to be updated:
+	Source:
+		✔ [chartVersion] Get latest sbombastic helm version
+	Target:
+		✔ [update_helm_version] Update Helm chart version
+
+
+Run Summary
+===========
+Pipeline(s) run:
+  * Changed:	0
+  * Failed:	0
+  * Skipped:	0
+  * Succeeded:	1
+  * Total:	1
+
