@@ -41,7 +41,7 @@ jobs:
           echo "Release tag version = $base"
           echo "Working tree version = $curr"
           # emit proper GitHub Actions output
-          if dpkg --compare-versions "$curr" ge "$base"; then
+          if dpkg --compare-versions "$base" ge "$curr"; then
             echo "version_bumped=true" >> $GITHUB_OUTPUT
           else
             echo "version_bumped=false" >> $GITHUB_OUTPUT
