@@ -24,18 +24,30 @@ jobs:
       - name: Install Updatecli in the runner
         uses: updatecli/updatecli-action@307ce72e224b82157cc31c78828f168b8e55d47d # v2.84.0
       - name: Check Chart version bump
+        env:
+          UPDATECLI_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         id: check_ver
         run: |
+          set -e
           changed=$(updatecli diff --config updatecli/updatecli.d/helm-chart-update-detect.yaml --values updatecli/values.yaml)
           echo "changed: $changed"
 
+          # Goal is to get the number of changed pipelines
+          # Run Summary
+          # ===========
+          # Pipeline(s) run:
+          #   * Changed:	1
+          #   * Failed:	0
+          #   * Skipped:	0
+          #   * Succeeded:	0
+          #   * Total:	1
           summary=$(echo "$changed" | sed -n '/Pipeline(s) run:/,/^$/p')
           echo "summary: $summary"
 
           changed=$(echo "$summary" | grep 'Changed:' | sed -E 's/.*Changed:[[:space:]]*([0-9]+).*/\1/')
           echo "changed: $changed"
 
-          if [ "$changed" -gt 0 ]; then
+          if [ "$changed" -ne 0 ]; then
           echo "version_bumped=true"
           else
           echo "version_bumped=false"
