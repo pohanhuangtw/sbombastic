@@ -15,7 +15,7 @@ jobs:
   detect-chart-update:
     runs-on: ubuntu-latest
     outputs:
-      version_bumped: ${{ steps.check_ver.outputs.bumped }}
+      version_bumped: ${{ steps.check_ver.outputs.version_bumped }}
     steps:
       - name: Checkout with history
         uses: actions/checkout@v4
@@ -30,7 +30,6 @@ jobs:
         run: |
           set -e
           changed=$(updatecli diff --config updatecli/updatecli.d/helm-chart-update-detect.yaml --values updatecli/values.yaml)
-          echo "changed: $changed"
 
           # Goal is to get the number of changed pipelines
           # Run Summary
@@ -42,15 +41,13 @@ jobs:
           #   * Succeeded:	0
           #   * Total:	1
           summary=$(echo "$changed" | sed -n '/Pipeline(s) run:/,/^$/p')
-          echo "summary: $summary"
 
           changed=$(echo "$summary" | grep 'Changed:' | sed -E 's/.*Changed:[[:space:]]*([0-9]+).*/\1/')
-          echo "changed: $changed"
 
           if [ "$changed" -ne 0 ]; then
-          echo "version_bumped=true"
+          echo "version_bumped=true" >> $GITHUB_OUTPUT
           else
-          echo "version_bumped=false"
+          echo "version_bumped=false" >> $GITHUB_OUTPUT
           fi
   bump-chart-version:
     needs: [detect-chart-update]
@@ -63,6 +60,7 @@ jobs:
 
   release-chart:
     needs: [detect-chart-update]
+    if: needs.detect-chart-update.outputs.version_bumped == 'false'
     permissions:
       contents: write # chart-releaser needs to release the charts to the repository
     runs-on: ubuntu-latest
