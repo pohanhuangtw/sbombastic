@@ -1,16 +1,62 @@
 name: Release Charts
-
 on:
   push:
     branches:
       - main
-
+    paths:
+      - 'charts/**'
 concurrency:
   group: "release"
   cancel-in-progress: false
-
 jobs:
-  release:
+  detect-chart-update:
+    runs-on: ubuntu-latest
+    outputs:
+      version_bumped: ${{ steps.check_ver.outputs.version_bumped }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch all tags
+        run: |
+          git fetch --no-tags --depth=1 origin
+          git fetch --tags
+      - name: Get latest sbombastic-chart tag
+        id: get_latest_tag
+        run: |
+          LATEST_TAG=$(git tag --list 'sbombastic-chart-*' | sort -V | tail -n1)
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+      - name: Show latest tag
+        run: echo "Latest chart release tag is ${{ steps.get_latest_tag.outputs.latest_tag }}"
+      - name: Compare Chart.yaml against that tag
+        id: check_ver
+        run: |
+          TAG=${{ steps.get_latest_tag.outputs.latest_tag }}
+          CHART=charts/sbombastic/Chart.yaml
+          # version in the release tag
+          base=$(git show "$TAG:$CHART" | grep '^version:' | awk '{print $2}')
+          # version in the current working tree
+          curr=$(grep '^version:' "$CHART" | awk '{print $2}')
+          echo "Release tag version = $base"
+          echo "Working tree version = $curr"
+          # emit proper GitHub Actions output
+          if dpkg --compare-versions "$curr" ge "$base"; then
+            echo "version_bumped=true" >> $GITHUB_OUTPUT
+          else
+            echo "version_bumped=false" >> $GITHUB_OUTPUT
+          fi
+  bump-chart-version:
+    needs: [detect-chart-update]
+    if: needs.detect-chart-update.outputs.version_bumped == 'true'
+    uses: ./.github/workflows/update-charts.yml
+    permissions:
+      contents: write # for updatecli to update the repository
+      pull-requests: write # for updatecli to create a PR
+    secrets: inherit
+  release-chart:
+    needs: [detect-chart-update]
+    if: needs.detect-chart-update.outputs.version_bumped == 'false'
     permissions:
       contents: write # chart-releaser needs to release the charts to the repository
     runs-on: ubuntu-latest
@@ -19,22 +65,16 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           fetch-depth: 0
-
       - name: Configure Git
         run: |
           git config user.name "$GITHUB_ACTOR"
           git config user.email "$GITHUB_ACTOR@users.noreply.github.com"
-
       - name: Install Helm
         uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
-
       - name: Add dependency chart repos
         run: |
           helm repo add nats https://nats-io.github.io/k8s/helm/charts/
-
       - name: Run chart-releaser
         uses: helm/chart-releaser-action@cae68fefc6b5f367a0275617c9f83181ba54714f # v1.7.0
-        with:
-          config: cr.yaml
         env:
           CR_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
