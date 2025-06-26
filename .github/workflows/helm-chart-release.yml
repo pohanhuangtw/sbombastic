@@ -44,6 +44,11 @@ jobs:
       - uses: azure/setup-helm@b9e51907a09c216f16ebe8536097933489208112 # v4.3.0
         with:
           version: "latest"
+
+      - name: Add Helm dependency repos
+        run: |
+          helm repo add nats https://nats-io.github.io/k8s/helm/charts/
+
       - name: Release Helm charts
         shell: bash
         env:
