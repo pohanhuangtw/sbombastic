@@ -1,5 +1,18 @@
 name: Release Charts
 
+# This workflow is used to release the sbombastic chart to the repository with Kubewarden style, with following characteristics:
+# - it check if the chart version is already released.
+#   - if it is not released, it will create a new release.
+#   - if it is released, it do nothing, only when other maintainer create the version bump.
+
+# outputs:
+# - if the chart version is already released, it will update the chart version.
+#    - do nothing
+# - if the chart version is not released, it will create a new release.
+
+# Limitation:
+# - It will check with one charts now. (sbombastic)
+#   - if we want to separate the CRD as another chart, we need to change the workflow.
 on:
   push:
     branches:
@@ -10,7 +23,44 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  release:
+  detect-chart-update:
+    runs-on: ubuntu-latest
+    outputs:
+      release_exist: ${{ steps.check_ver.outputs.release_exist }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Fetch all tags
+        run: |
+          git fetch --no-tags --depth=1 origin
+          git fetch --tags
+      - name: Get latest sbombastic-chart tag
+        id: get_latest_tag
+        run: |
+          LATEST_TAG=$(git tag --list 'sbombastic-chart-*' | sort -V | tail -n1)
+          echo "latest_tag=$LATEST_TAG" >> $GITHUB_OUTPUT
+      - name: Show latest tag
+        run: echo "Latest chart release tag is ${{ steps.get_latest_tag.outputs.latest_tag }}"
+
+      - name: Compare Chart.yaml against that tag
+        id: check_ver
+        run: |
+          # current release a chart at once.
+          chart_version=$(helm show chart charts/sbombastic | yq -r '.version')
+          # check if the chart version is already released
+          OWNER=${{ github.repository_owner }}
+          REPO=sbombastic
+          if gh --repo $OWNER/$REPO release view sbombastic-chart-$chart_version; then
+            echo "release_exist=true" >> $GITHUB_OUTPUT
+          else
+            echo "release_exist=false" >> $GITHUB_OUTPUT
+          fi
+
+  release-chart:
+    needs: [detect-chart-update]
+    if: needs.detect-chart-update.outputs.release_exist == 'false'
     permissions:
       contents: write # chart-releaser needs to release the charts to the repository
     runs-on: ubuntu-latest
