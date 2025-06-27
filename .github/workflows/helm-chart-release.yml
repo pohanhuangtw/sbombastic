@@ -51,8 +51,6 @@ jobs:
 
       - name: Release Helm charts
         shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -ex
 
@@ -66,7 +64,7 @@ jobs:
           # Release each chart in the charts directory
           for chart in $(find charts -maxdepth 1 -mindepth 1  -type d ); do
             chart_name=$(basename $chart)
-            chart_path=${PACKAGE_PATH}/${chart_name}-chart-*.tgz
+            chart_path=${PACKAGE_PATH}/${chart_name}-*.tgz
 
             cr package charts/${chart_name} --config ${CONFIG_FILE} --package-path ${PACKAGE_PATH}
 
