@@ -72,10 +72,7 @@ jobs:
 
             # check if the chart version is already release. If so, do nothing
             chart_version=$(helm show chart $chart_path | yq -r '.version')
-            echo "Chart version: $chart_version"
 
-            result=$(gh --repo ${OWNER}/${REPO} release view $chart_name-chart-$chart_version)
-            echo "Result: $result"
             # check if the chart version is already release. If so, do nothing
             if gh --repo ${OWNER}/${REPO} release view $chart_name-chart-$chart_version; then
               echo "Chart $chart_name-chart-$chart_version already released. No need to release again."
