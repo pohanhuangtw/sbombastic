@@ -1,12 +1,20 @@
+
 name: Release Drafter
 
 on:
+  workflow_dispatch:
   push:
+    # branches to consider in the event; optional, defaults to all
     branches:
       - main
+  # pull_request event is required only for autolabeler
+  pull_request:
+    # Only following types are handled by the action, but one can default to all as well
+    types: [opened, reopened, synchronize, edited]
+
 permissions:
   contents: read
-  pull-requests: write
+
 jobs:
   update_release_draft:
     permissions:
