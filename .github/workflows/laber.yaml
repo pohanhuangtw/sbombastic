@@ -19,30 +19,25 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Look up PRs associated with this commit SHA
-            const commitsPRs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+            const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               owner: context.repo.owner,
-              repo: context.repo.repo,
+              repo:  context.repo.repo,
               commit_sha: context.sha
             });
-            // Pick the one that was merged
-            const pr = commitsPRs.data.find(p => p.merged_at);
-            if (!pr) core.setFailed(`No merged PR found for ${context.sha}`);
+            const pr = data.find(p => p.merged_at);
+            if (!pr) core.setFailed(`No merged PR for ${context.sha}`);
             core.setOutput('number', pr.number);
 
-      - name: Add label to that PR
+      - name: Label the PR
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          number: ${{ steps.find_pr.outputs.number }}   # ← 这里一定要把 number 传进来
           script: |
             const prNumber = parseInt(core.getInput('number', { required: true }));
             await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
               issue_number: prNumber,
-              labels: [
-                // you can compute this dynamically (e.g. from commit message),
-                // or hard-code a label:
-                'kind/feature'
-              ]
+              labels: ['kind/feature']
             });
