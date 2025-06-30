@@ -1,10 +1,9 @@
 name: Release Drafter
 
 on:
-  push:
+  workflow_call:
+  # push:
     # branches to consider in the event; optional, defaults to all
-    branches:
-      - main
 
   # pull_request event is required only for autolabeler
   pull_request:
@@ -33,6 +32,13 @@ jobs:
       #    echo "GHE_HOST=${GITHUB_SERVER_URL##https:\/\/}" >> $GITHUB_ENV
 
       # Drafts your next Release notes as Pull Requests are merged into "master"
+      - name: Label PRs
+        uses: release-drafter/release-drafter@v6
+        with:
+          config-name: my-config.yml
+          disable-autolabeler: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - uses: release-drafter/release-drafter@v6
         # (Optional) specify config name to use, relative to .github/. Default: release-drafter.yml
         # with:
