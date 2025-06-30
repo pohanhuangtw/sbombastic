@@ -1,24 +1,48 @@
-name: Advanced PR Labeling
+# .github/workflows/label-merged-pr.yml
+name: Label Merged PR on Push
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main ]
+
 permissions:
-  contents: write    # 创建 Release 需要
+  contents: read          # you don’t need to write files
+  pull-requests: write    # to write labels on PRs
+
 jobs:
-  release:
+  label-merged-pr:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Find PR for this merge commit
+        id: find_pr
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            // Look up PRs associated with this commit SHA
+            const commitsPRs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              commit_sha: context.sha
+            });
+            // Pick the one that was merged
+            const pr = commitsPRs.data.find(p => p.merged_at);
+            if (!pr) core.setFailed(`No merged PR found for ${context.sha}`);
+            core.setOutput('number', pr.number);
 
-      - name: Create (or update) Draft Release with Auto-Notes
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          TAG=${GITHUB_REF#refs/tags/}
-          gh release create "$TAG" \
-            --repo "$GITHUB_REPOSITORY" \
-            --title "Release $TAG" \
-            --generate-notes \
-            --draft
+      - name: Add label to that PR
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const prNumber = parseInt(core.getInput('number', { required: true }));
+            await github.rest.issues.addLabels({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber,
+              labels: [
+                // you can compute this dynamically (e.g. from commit message),
+                // or hard-code a label:
+                'kind/feature'
+              ]
+            });
