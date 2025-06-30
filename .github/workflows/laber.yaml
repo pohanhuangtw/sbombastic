@@ -19,30 +19,23 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            // Look up PRs associated with this commit SHA
-            const commitsPRs = await github.rest.repos.listPullRequestsAssociatedWithCommit({
+            const { data } = await github.rest.repos.listPullRequestsAssociatedWithCommit({
               owner: context.repo.owner,
-              repo: context.repo.repo,
+              repo:  context.repo.repo,
               commit_sha: context.sha
             });
-            // Pick the one that was merged
-            const pr = commitsPRs.data.find(p => p.merged_at);
-            if (!pr) core.setFailed(`No merged PR found for ${context.sha}`);
-            core.setOutput('number', pr.number);
+            const pr = data.find(p => p.merged_at);
+            if (!pr) core.setFailed(`No merged PR for ${context.sha}`);
+            echo "number=$pr.number" >> $GITHUB_OUTPUT
 
-      - name: Add label to that PR
+      - name: Label the PR
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const prNumber = parseInt(core.getInput('number', { required: true }));
             await github.rest.issues.addLabels({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber,
-              labels: [
-                // you can compute this dynamically (e.g. from commit message),
-                // or hard-code a label:
-                'kind/feature'
-              ]
+              owner:        context.repo.owner,
+              repo:         context.repo.repo,
+              issue_number: ${{ steps.find_pr.outputs.number }}  ,
+              labels: ['kind/feature']
             });
