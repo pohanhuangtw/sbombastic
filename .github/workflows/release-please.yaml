@@ -1,9 +1,7 @@
 name: Release Please Create a Draft Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 permissions:
   contents: write     # to create the Git tag & release
