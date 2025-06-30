@@ -1,0 +1,21 @@
+# .github/labeler.yml
+
+# 给所有以 feature/ 打头的分支打上 kind/feature
+kind/feature:
+  - head-branch:
+      - '^feature/'
+
+# 给以 bugfix/ 打头的分支打上 kind/bug
+kind/bug:
+  - head-branch:
+      - '^bugfix/'
+
+# 给以 hotfix/ 打头的分支打上 kind/hotfix
+kind/hotfix:
+  - head-branch:
+      - '^hotfix/'
+
+# 兜底：匹配所有 PR（如果前面都不匹配，就打 needs-triage）
+needs-triage:
+  - any:
+      head-branch: ['.*']
