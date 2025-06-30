@@ -1,9 +1,7 @@
 name: Release Please Create a Draft Release
 
 on:
-  push:
-    branches:
-      - main
+  workflow_call:
 
 permissions:
   contents: write     # to create the Git tag & release
@@ -18,4 +16,4 @@ jobs:
         run: npm install --global release-please@v17.1.0
       - name: Create draft release
         run: |
-          release-please github-release --token ${{ secrets.GITHUB_TOKEN }} --repo-url=${{ github.repository }} --config-file .github/config/release-please/config.json
+          release-please github-release --token ${{ secrets.GITHUB_TOKEN }} --repo-url=${{ github.repository }} --config-file .github/config/release-please/config.json --manifest-file .github/config/release-please/manifest.json
