@@ -18,4 +18,4 @@ jobs:
         run: npm install --global release-please@v17.1.0
       - name: Create draft release
         run: |
-          release-please github-release --config .github/release-please.yml --token ${{ secrets.GITHUB_TOKEN }} --dry-run
+          release-please github-release --token ${{ secrets.GITHUB_TOKEN }} --repo-url=${{ github.repository }} --config .github/config/release-please/config.json  --manifest-file .github/config/release-please/manifest.json
