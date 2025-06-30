@@ -4,6 +4,11 @@ name: Label Merged PR on Push
 on:
   workflow_call:
 
+  pull_request:
+    types: [opened]
+  pull_request_target:
+    types: [opened]
+
 permissions:
   contents: read          # you don’t need to write files
   issues: write    # to write labels on PRs
