@@ -26,18 +26,16 @@ jobs:
             });
             const pr = data.find(p => p.merged_at);
             if (!pr) core.setFailed(`No merged PR for ${context.sha}`);
-            core.setOutput('number', pr.number);
+            echo "number=$pr.number" >> $GITHUB_OUTPUT
 
       - name: Label the PR
         uses: actions/github-script@v7
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          number: ${{ steps.find_pr.outputs.number }}   # ← 这里一定要把 number 传进来
           script: |
-            const prNumber = parseInt(core.getInput('number', { required: true }));
             await github.rest.issues.addLabels({
               owner:        context.repo.owner,
               repo:         context.repo.repo,
-              issue_number: prNumber,
+              issue_number: ${{ steps.find_pr.outputs.number }}  ,
               labels: ['kind/feature']
             });
