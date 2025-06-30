@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read          # you don’t need to write files
-  pull-requests: write    # to write labels on PRs
+  issues: write    # to write labels on PRs
 
 jobs:
   label-merged-pr:
