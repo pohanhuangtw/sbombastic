@@ -19,3 +19,5 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           config-file: .github/config/release-please/config.json
           manifest-file: .github/config/release-please/manifest.json
+          skip-github-pull-request: true
+          skip-github-release: false
