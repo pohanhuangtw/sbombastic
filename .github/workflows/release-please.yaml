@@ -14,12 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          release-type: go
-          skip-github-pull-request: true
-          skip-github-release: false
-          config-file: .github/config/release-please/config.json
-          manifest-file: .github/config/release-please/manifest.json
-          draft: true
+      - name: Install release-please
+        run: npm install --global release-please@d4ac83a70f66e0d3444a51e88e72927662e8e64d #v17.1.0
+      - name: Create draft release
+        run: |
+          release-please github-release --config .github/release-please.yml --token ${{ secrets.GITHUB_TOKEN }} --dry-run

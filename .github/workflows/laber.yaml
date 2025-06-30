@@ -2,8 +2,7 @@
 name: Label Merged PR on Push
 
 on:
-  push:
-    branches: [ main ]
+  workflow_call:
 
 permissions:
   contents: read          # you don’t need to write files
