@@ -22,3 +22,4 @@ jobs:
           skip-github-release: false
           config-file: .github/config/release-please/config.json
           manifest-file: .github/config/release-please/manifest.json
+          draft: true
