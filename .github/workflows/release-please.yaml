@@ -17,7 +17,8 @@ jobs:
       - uses: googleapis/release-please-action@a02a34c4d625f9be7cb89156071d8567266a2445 # v4.2.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          config-file: .github/config/release-please/config.json
-          manifest-file: .github/config/release-please/manifest.json
+          release-type: go
           skip-github-pull-request: true
           skip-github-release: false
+          config-file: .github/config/release-please/config.json
+          manifest-file: .github/config/release-please/manifest.json
