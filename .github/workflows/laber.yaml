@@ -5,8 +5,9 @@ on:
     types: [opened, reopened, synchronize]
 
 permissions:
-  contents:      read    # 代码 checkout
-  pull-requests: write   # 给 PR 打标签
+  contents:      read
+  pull-requests: write
+  issues: write
 
 jobs:
   label:
@@ -17,5 +18,5 @@ jobs:
         with:
           repo-token:        ${{ secrets.GITHUB_TOKEN }}
           configuration-path: .github/labeler.yml
-          sync-labels:       false      # 不会移除已存在但不再匹配的标签
-          dot:               true       # 默认匹配以 “.” 开头的路径（无关分支）
+          sync-labels:       false
+          dot:               true
