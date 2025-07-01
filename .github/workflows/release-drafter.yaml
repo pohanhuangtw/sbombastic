@@ -38,6 +38,7 @@ jobs:
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' \
             -H "Authorization: Bearer ${{ steps.vars.outputs.token }}" \
+            -H "Accept: application/vnd.github+json" \
             "https://api.github.com/orgs/rancher-sandbox/teams/sbombastic-developers/memberships/${{ steps.vars.outputs.pr_author }}")
           [[ "$code" == "200" ]] && echo "in_team=true" >> "$GITHUB_OUTPUT" || echo "in_team=false" >> "$GITHUB_OUTPUT"
 
