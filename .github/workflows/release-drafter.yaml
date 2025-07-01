@@ -26,7 +26,6 @@ jobs:
         id: vars
         run: |
           echo "pr_author=${{ github.actor }}" >> "$GITHUB_OUTPUT"
-          echo "repo_owner=${{ github.repository_owner }}"           >> "$GITHUB_OUTPUT"
           echo "token=${{ secrets.GITHUB_TOKEN }}"                    >> "$GITHUB_OUTPUT"
           echo "whitelist=${{ vars.WHITE_LIST || '' }}"          >> "$GITHUB_OUTPUT"
 
@@ -39,7 +38,7 @@ jobs:
         run: |
           code=$(curl -s -o /dev/null -w '%{http_code}' \
             -H "Authorization: Bearer ${{ steps.vars.outputs.token }}" \
-            "https://api.github.com/orgs/${{ steps.vars.outputs.repo_owner }}/teams/sbombastic-developers/memberships/${{ steps.vars.outputs.pr_author }}")
+            "https://api.github.com/orgs/rancher-sandbox/teams/sbombastic-developers/memberships/${{ steps.vars.outputs.pr_author }}")
           [[ "$code" == "200" ]] && echo "in_team=true" >> "$GITHUB_OUTPUT" || echo "in_team=false" >> "$GITHUB_OUTPUT"
 
           echo "in_team : $in_team"
@@ -74,7 +73,7 @@ jobs:
       - name: Decide
         id: auth
         run: |
-          if [[ "${{ steps.team.outputs.in_team }}" == "true" || "${{ steps.wl.outputs.in_wl }}" == "true" ]]; then
+          if [[ "${{ steps.team.outputs.in_team }}" == "true" || "${{ steps.wl.outputs.authorised }}" == "true" ]]; then
             echo "::notice::${{ steps.vars.outputs.pr_author }} authorised - continuing"
             echo "allowed=true" >> "$GITHUB_OUTPUT"
           else
