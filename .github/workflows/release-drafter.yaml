@@ -28,6 +28,7 @@ jobs:
           echo "pr_author=${{ github.actor }}" >> "$GITHUB_OUTPUT"
           echo "repo_owner=${{ github.repository_owner }}"           >> "$GITHUB_OUTPUT"
           echo "token=${{ secrets.GITHUB_TOKEN }}"                    >> "$GITHUB_OUTPUT"
+          echo "whitelist=${{ vars.WHITE_LIST || '' }}"          >> "$GITHUB_OUTPUT"
 
       # ---------- 1) team check ----------
       - name: Is author in team?
