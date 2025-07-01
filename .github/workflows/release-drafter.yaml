@@ -30,6 +30,9 @@ jobs:
           echo "token=${{ secrets.GITHUB_TOKEN }}"                    >> "$GITHUB_OUTPUT"
           echo "whitelist=${{ vars.WHITE_LIST || '' }}"          >> "$GITHUB_OUTPUT"
 
+          echo "whitelist : $whitelist"
+          echo "pr_author : $pr_author"
+
       # ---------- 1) team check ----------
       - name: Is author in team?
         id: team
@@ -39,6 +42,8 @@ jobs:
             "https://api.github.com/orgs/${{ steps.vars.outputs.repo_owner }}/teams/sbombastic-developers/memberships/${{ steps.vars.outputs.pr_author }}")
           [[ "$code" == "200" ]] && echo "in_team=true" >> "$GITHUB_OUTPUT" || echo "in_team=false" >> "$GITHUB_OUTPUT"
 
+          echo "in_team : $in_team"
+          echo "code : $code "
 
       # ---------- 2) whitelist check ----------
       - name: Is author in file whitelist?
