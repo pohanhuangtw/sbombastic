@@ -1,0 +1,120 @@
+# This is a Rancher questions file
+---
+questions:
+  ###############################################################################
+  # Controller
+  ###############################################################################
+  - variable: controller.image.repository
+    label: Controller Image Repository
+    type: string
+    default: ghcr.io/rancher-sandbox/sbombastic/controller
+    group: Controller
+
+  - variable: controller.image.tag
+    label: Controller Image Tag
+    type: string
+    default: v0.1.0-alpha1
+    group: Controller
+
+  - variable: controller.image.pullPolicy
+    label: Controller Image Pull Policy
+    type: enum
+    default: IfNotPresent
+    options:
+      - Always
+      - IfNotPresent
+      - Never
+    group: Controller
+
+  - variable: controller.replicas
+    label: Controller Replicas
+    type: int
+    default: 3
+    min: 1
+    group: Controller
+
+  - variable: controller.logLevel
+    label: Controller Log Level
+    type: enum
+    default: info
+    options:
+      - debug
+      - info
+      - warn
+      - error
+    group: Controller
+
+  ###############################################################################
+  # Worker
+  ###############################################################################
+  - variable: worker.image.repository
+    label: Worker Image Repository
+    type: string
+    default: ghcr.io/rancher-sandbox/sbombastic/worker
+    group: Worker
+
+  - variable: worker.image.tag
+    label: Worker Image Tag
+    type: string
+    default: v0.1.0-alpha1
+    group: Worker
+
+  - variable: worker.image.pullPolicy
+    label: Worker Image Pull Policy
+    type: enum
+    default: IfNotPresent
+    options:
+      - Always
+      - IfNotPresent
+      - Never
+    group: Worker
+
+  - variable: worker.replicas
+    label: Worker Replicas
+    type: int
+    default: 3
+    min: 1
+    group: Worker
+
+  - variable: worker.logLevel
+    label: Worker Log Level
+    type: enum
+    default: info
+    options:
+      - debug
+      - info
+      - warn
+      - error
+    group: Worker
+
+  ###############################################################################
+  # Storage
+  ###############################################################################
+  - variable: storage.image.repository
+    label: Storage Image Repository
+    type: string
+    default: ghcr.io/rancher-sandbox/sbombastic/storage
+    group: Storage
+
+  - variable: storage.image.tag
+    label: Storage Image Tag
+    type: string
+    default: v0.1.0-alpha1
+    group: Storage
+
+  - variable: storage.image.pullPolicy
+    label: Storage Image Pull Policy
+    type: enum
+    default: IfNotPresent
+    options:
+      - Always
+      - IfNotPresent
+      - Never
+    group: Storage
+
+  - variable: storage.replicas
+    label: Storage Replicas
+    type: int
+    default: 1
+    min: 1
+    group: Storage
