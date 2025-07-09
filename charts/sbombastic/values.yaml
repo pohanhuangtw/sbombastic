@@ -90,3 +90,28 @@ nats:
         capabilities:
             drop:
             - "ALL"
+
+# NOTE: This section is used to configure the cluster chart dependency.
+cluster:
+  fullnameOverride: sbombastic-cnpg-cluster
+  cluster:
+    instances: 1
+    initdb:
+      database: sbombastic
+      owner: sbombastic
+      secret:
+        name: "" # cnpg will create a secret with the name of the database owner
+    postgresql:
+      pg_hba:
+        - hostssl all all 0.0.0.0/0 scram-sha-256 clientcert=verify-full # mTLS for all connections
+        - hostnossl all all 0.0.0.0/0 reject
+
+    certificates:
+      serverCASecret:   sbombastic-cnpg-server-cert
+      serverTLSSecret:  sbombastic-cnpg-server-cert
+      clientCASecret:   sbombastic-cnpg-client-cert
+      replicationTLSSecret: sbombastic-cnpg-client-cert
+
+    storage:
+      size: 1Gi
+      # storageClass:  #  If defined, PVC must be created manually before volume will be bound
