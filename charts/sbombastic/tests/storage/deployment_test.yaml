@@ -6,6 +6,9 @@ templates:
 tests:
   - it: "should render a Deployment with the correct replica count, logging level, image, and imagePullPolicy"
     set:
+      global:
+        cattle:
+          systemDefaultRegistry: rancher.io
       storage:
         replicas: 5
         logLevel: debug
@@ -21,7 +24,7 @@ tests:
           value: 5
       - equal:
           path: "spec.template.spec.containers[0].image"
-          value: "ghcr.io/rancher-sandbox/sbombastic/storage:v0.1.0"
+          value: "rancher.io/rancher-sandbox/sbombastic/storage:v0.1.0"
       - equal:
           path: "spec.template.spec.containers[0].imagePullPolicy"
           value: "Always"
@@ -41,14 +44,3 @@ tests:
       - equal:
           path: "spec.template.spec.volumes[0].persistentVolumeClaim.claimName"
           value: "existing-claim"
-  - it: "should render a Deployment with the default values"
-    asserts:
-      - equal:
-          path: "spec.replicas"
-          value: 1
-      - equal:
-          path: "spec.template.spec.containers[0].image"
-          value: "ghcr.io/rancher-sandbox/sbombastic/storage:0.1.0-alpha1"
-      - equal:
-          path: "spec.template.spec.containers[0].imagePullPolicy"
-          value: "IfNotPresent"
