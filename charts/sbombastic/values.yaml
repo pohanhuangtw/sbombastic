@@ -114,4 +114,4 @@ cluster:
 
     storage:
       size: 1Gi
-      # storageClass:  #  If defined, PVC must be created manually before volume will be bound
+      # storageClass: # Specify the storage class to use. If defined, ensure it has reclaimPolicy: Retain to prevent data loss if the cluster is accidentally deleted
