@@ -10,7 +10,7 @@ tests:
         replicas: 5
         logLevel: debug
         image:
-          repository: ghcr.io/rancher-sandbox/sbombastic/worker
+          repository: rancher-sandbox/sbombastic/worker
           tag: v0.1.0
           pullPolicy: Always
     asserts:
@@ -26,3 +26,17 @@ tests:
       - contains:
           path: "spec.template.spec.containers[0].args"
           content: "-log-level=debug"
+  - it: "should render a Deployment with the default values"
+    asserts:
+      - equal:
+          path: "spec.replicas"
+          value: 3
+      - equal:
+          path: "spec.template.spec.containers[0].image"
+          value: "ghcr.io/rancher-sandbox/sbombastic/worker:0.1.0-alpha1"
+      - equal:
+          path: "spec.template.spec.containers[0].imagePullPolicy"
+          value: "IfNotPresent"
+      - contains:
+          path: "spec.template.spec.containers[0].args"
+          content: "-log-level=info"
