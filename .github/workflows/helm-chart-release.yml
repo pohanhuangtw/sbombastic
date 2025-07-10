@@ -93,7 +93,7 @@ jobs:
             echo "Repository indexed!"
 
             # Publish the charts to the OCI registry and sign them
-            REGISTRY="ghcr.io/$GITHUB_REPOSITORY_OWNER/charts"
+            REGISTRY="ghcr.io/$GITHUB_REPOSITORY_OWNER/sbombastic/charts"
             echo "REGISTRY=${REGISTRY}" >> "$GITHUB_ENV"
             for chart_path in $(find ${PACKAGE_PATH} -maxdepth 1 -mindepth 1 ); do
               echo "Pushing chart $chart_path to ghcr.io"
