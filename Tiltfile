@@ -45,11 +45,25 @@ helm_resource(
     ],
 )
 
-
 # Create the sbombastic namespace
 # This is required since the helm() function doesn't support the create_namespace flag
 load("ext://namespace", "namespace_create")
 namespace_create("sbombastic")
+
+## install cnpg-operator within the sbombastic namespace
+cnpg_version = "v0.24.0"
+helm_repo("cnpg-repo", "https://cloudnative-pg.io/charts/")
+helm_resource(
+    "cnpg",
+    "cnpg/cloudnative-pg",
+    namespace="sbombastic",
+    flags=[
+        "--version",
+        cnpg_version,
+        "--set",
+        "config.clusterWide=false",
+    ],
+)
 
 controller_image = settings.get("controller").get("image")
 storage_image = settings.get("storage").get("image")
