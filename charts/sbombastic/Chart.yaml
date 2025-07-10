@@ -30,6 +30,7 @@ dependencies:
   - name: cluster
     version: "0.3.1"
     repository: "https://cloudnative-pg.github.io/charts"
+    condition: storage.cnpg.createCluster
 
 annotations:
   catalog.cattle.io/certified: rancher # Any application we are adding as a helm chart

@@ -35,9 +35,27 @@ spec:
               mountPath: /data/sqlite/
             - name: cert-volume
               mountPath: /certs
+            - name: client-ca-key-pair-volume
+              mountPath: /certs/client-ca-key-pair
+            - name: server-ca-volume
+              mountPath: /certs/server-ca
+            - name: cnpg-cluster-password-volume
+              mountPath: /certs/cnpg-cluster-password
       volumes:
         - name: sqlite-pvc
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.storageData.existingClaim }}{{ .Values.persistence.storageData.existingClaim }}{{- else }}{{ template "sbombastic.fullname" . }}-storage-data{{- end }}
         - name: cert-volume
           emptyDir: {}
+        - name: client-ca-key-pair-volume
+          secret:
+            secretName: {{ if .Values.storage.cnpg.createCluster }}{{ .Values.storage.cnpg.secret.clientCAKeyPair }}{{- else }}{{ template "sbombastic.fullname" . }}-cnpg-client-ca-key-pair{{- end }}
+            defaultMode: 0400
+        - name: server-ca-volume
+          secret:
+            secretName: {{ if .Values.storage.cnpg.createCluster }}{{ .Values.storage.cnpg.secret.serverCA }}{{- else }}{{ .Values.cluster.cluster.certificates.serverCASecret }}{{- end }}
+            defaultMode: 0400
+        - name: cnpg-cluster-password-volume
+          secret:
+            secretName: {{ if .Values.storage.cnpg.createCluster }}{{ .Values.storage.cnpg.secret.password }}{{- else }}{{ .Values.cluster.fullnameOverride }}-app{{- end }}
+            defaultMode: 0400

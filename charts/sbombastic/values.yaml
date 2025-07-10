@@ -1,7 +1,6 @@
 # Default values for sbombastic.
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
-
 controller:
   image:
     repository: ghcr.io/rancher-sandbox/sbombastic/controller
@@ -17,6 +16,20 @@ storage:
     pullPolicy: IfNotPresent
   replicas: 1
   # logLevel: "debug" //TODO: uncomment this, when the log parser in storage is implemented
+  cnpg:
+    # NOTE: if you want to use the default cluster, you can uncomment the following section
+    # createCluster: true
+    # NOTE: if you want to use your own cluster, you can uncomment the following section
+    createCluster: false
+    secret:
+      password: sbombastic-cnpg-cluster-app
+      clientCAKeyPair: sbombastic-cnpg-client-ca-key-pair
+      serverCA: sbombastic-cnpg-server-cert
+    cert-manager:
+      issuer:
+        client: sbombastic-cnpg-client-issuer
+    cluster:
+      owner: sbombastic
 
 worker:
   image:
@@ -40,8 +53,6 @@ persistence:
     # existingClaim:
     accessMode: ReadWriteOnce
     size: 1Gi
-
-
 
 # NOTE: This section is used to configure the NATS server and its components
 # deployed by the NATS chart dependency.
@@ -101,11 +112,13 @@ cluster:
       owner: sbombastic
       secret:
         name: "" # cnpg will create a secret with the name of the database owner
+
     postgresql:
       pg_hba:
         - hostssl all all 0.0.0.0/0 scram-sha-256 clientcert=verify-full # mTLS for all connections
         - hostnossl all all 0.0.0.0/0 reject
 
+    # NOTE: prefix sbombastic can be changed to result of {{ include "sbombastic.fullname" . }}
     certificates:
       serverCASecret:   sbombastic-cnpg-server-cert
       serverTLSSecret:  sbombastic-cnpg-server-cert
