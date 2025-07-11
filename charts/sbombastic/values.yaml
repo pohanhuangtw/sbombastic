@@ -31,6 +31,8 @@ worker:
   replicas: 3
   logLevel: "info"
 
+
+# TODO: Remove this section when the cnpg integration is done
 persistence:
   enabled: true
 
@@ -40,13 +42,15 @@ persistence:
     subPath:
     annotations: {}
     labels: {}
-    # storageClass: ""
+    storageClass: "standard" # TODO: change this to the storage class you want to use
     ## If defined, PVC must be created manually before volume will be bound
     # existingClaim:
     accessMode: ReadWriteOnce
     size: 1Gi
 
-
+# NOTE: This section is used to harden the deployment of the sbombastic components, default to true
+security:
+  harden_deployment: true
 
 # NOTE: This section is used to configure the NATS server and its components
 # deployed by the NATS chart dependency.
@@ -95,3 +99,39 @@ nats:
         capabilities:
             drop:
             - "ALL"
+
+# NOTE: This section is used to configure the CloudNativePG chart dependency.
+# Default to disable cluster-wide mode.
+cloudnative-pg:
+  config:
+    clusterWide: false
+  fullnameOverride: cnpg
+
+# TODO: remove it when the cnpg integration is done
+cnpg:
+  enabled: false
+
+# NOTE: SBOMbastic will create a default cluster for you, enable mTLS and server logging by default.
+# if you want to use your own cluster, you can set createCluster to false and provide the following secrets:
+# - password: the password for the cluster (default: {cluster-name}-cluster-app)
+# - clientCAKeyPair: the client CA key pair
+# - serverCA: the server CA certificate
+cluster:
+  createCluster: true
+  secret:
+    password: sbombastic-cnpg-cluster-app
+    clientCAKeyPair: sbombastic-cnpg-client-ca-key-pair
+    serverCA: sbombastic-cnpg-server-cert
+
+  # NOTE: This section is the default cluster settings for sbombastic
+  # if you already have a cluster, please ignore this section
+  fullnameOverride: sbombastic-cnpg-cluster
+  cluster:
+    instances: 1
+    initdb:
+      database: sbombastic
+      owner: sbombastic
+  
+  storege:
+    size: 1Gi
+    storageClass: standard # Default storage class, can be overridden by the user

@@ -1,0 +1,18 @@
+{{ if .Values.cluster.createCluster }}
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-storage-client-tls
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: {{ include "sbombastic.fullname" . }}-cnpg-storage-client-tls
+  commonName: {{ .Values.cluster.cluster.initdb.owner }}
+  usages:
+    - client auth
+  duration: 2160h
+  renewBefore: 240h
+  issuerRef:
+    name: {{ .Values.cluster.fullnameOverride }}-client-issuer
+    kind: Issuer
+    group: cert-manager.io
+{{- end }}

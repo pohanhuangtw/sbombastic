@@ -1,0 +1,129 @@
+{{ if .Values.cluster.createCluster }}
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-selfsigned-issuer
+  namespace: {{ .Release.Namespace }}
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-server-ca
+  namespace: {{ .Release.Namespace }}
+spec:
+  isCA: true
+  commonName: {{ include "sbombastic.fullname" . }}-selfsigned-cnpg-server-ca
+  secretName: {{ include "sbombastic.fullname" . }}-cnpg-server-ca-key-pair
+  duration: 8736h
+  renewBefore: 240h
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  issuerRef:
+    name: {{ include "sbombastic.fullname" . }}-cnpg-selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-server-issuer
+  namespace: {{ .Release.Namespace }}
+spec:
+  ca:
+    secretName: {{ include "sbombastic.fullname" . }}-cnpg-server-ca-key-pair
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-server-cert
+  namespace: {{ .Release.Namespace }}
+  labels:
+    cnpg.io/reload: ""
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-server-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: {{ include "sbombastic.fullname" . }}-cnpg-server-cert
+  usages:
+    - server auth
+  dnsNames:
+    - {{ .Values.cluster.fullnameOverride }}-rw
+    - {{ .Values.cluster.fullnameOverride }}-rw.{{ .Release.Namespace }}
+    - {{ .Values.cluster.fullnameOverride }}-rw.{{ .Release.Namespace }}.svc
+    - {{ .Values.cluster.fullnameOverride }}-rw.{{ .Release.Namespace }}.svc.cluster.local
+    - {{ .Values.cluster.fullnameOverride }}-r
+    - {{ .Values.cluster.fullnameOverride }}-r.{{ .Release.Namespace }}
+    - {{ .Values.cluster.fullnameOverride }}-r.{{ .Release.Namespace }}.svc
+    - {{ .Values.cluster.fullnameOverride }}-r.{{ .Release.Namespace }}.svc.cluster.local
+    - {{ .Values.cluster.fullnameOverride }}-ro
+    - {{ .Values.cluster.fullnameOverride }}-ro.{{ .Release.Namespace }}
+    - {{ .Values.cluster.fullnameOverride }}-ro.{{ .Release.Namespace }}.svc
+    - {{ .Values.cluster.fullnameOverride }}-ro.{{ .Release.Namespace }}.svc.cluster.local
+
+  duration: 2160h
+  renewBefore: 240h
+  issuerRef:
+    name: {{ include "sbombastic.fullname" . }}-cnpg-server-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-client-ca
+  namespace: {{ .Release.Namespace }}
+spec:
+  isCA: true
+  commonName: {{ include "sbombastic.fullname" . }}-selfsigned-cnpg-client-ca
+  secretName: {{ include "sbombastic.fullname" . }}-cnpg-client-ca-key-pair
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  duration: 8736h
+  renewBefore: 240h
+  issuerRef:
+    name: {{ include "sbombastic.fullname" . }}-cnpg-selfsigned-issuer
+    kind: Issuer
+    group: cert-manager.io
+---
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-client-issuer
+  namespace: {{ .Release.Namespace }}
+spec:
+  ca:
+    secretName: {{ include "sbombastic.fullname" . }}-cnpg-client-ca-key-pair
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-client-cert
+  namespace: {{ .Release.Namespace }}
+  labels:
+    cnpg.io/reload: ""
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: {{ include "sbombastic.fullname" . }}-cnpg-client-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: {{ include "sbombastic.fullname" . }}-cnpg-client-cert
+  usages:
+    - client auth
+  commonName: streaming_replica
+  duration: 2160h
+  renewBefore: 240h
+  issuerRef:
+    name: {{ include "sbombastic.fullname" . }}-cnpg-client-issuer
+    kind: Issuer
+    group: cert-manager.io
+{{- end }}
