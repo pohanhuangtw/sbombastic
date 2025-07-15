@@ -18,7 +18,7 @@ sources:
       token: '{{ requiredEnv .github.token }}'
       versionfilter:
         kind: "semver"
-        pattern: "*"
+        pattern: ">=0.0.0-0" # include pre-release, release
 
 scms:
   default:
