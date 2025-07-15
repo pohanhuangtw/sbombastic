@@ -35,9 +35,31 @@ spec:
               mountPath: /data/sqlite/
             - name: cert-volume
               mountPath: /certs
+          {{- if .Values.cnpg.enabled }} # TODO: remove this when the cnpg integration is done
+            - name: client-ca-key-pair-volume
+              mountPath: /certs/client-ca-key-pair
+            - name: server-ca-volume
+              mountPath: /certs/server-ca
+            - name: cnpg-cluster-password-volume
+              mountPath: /certs/cnpg-cluster-password
+          {{- end }}
       volumes:
         - name: sqlite-pvc
           persistentVolumeClaim:
             claimName: {{ if .Values.persistence.storageData.existingClaim }}{{ .Values.persistence.storageData.existingClaim }}{{- else }}{{ template "sbombastic.fullname" . }}-storage-data{{- end }}
         - name: cert-volume
           emptyDir: {}
+        {{- if .Values.cnpg.enabled }} # TODO: remove this when the cnpg integration is done
+        - name: client-ca-key-pair-volume
+          secret:
+            secretName: {{ .Values.cluster.secret.clientCAKeyPair }}
+            defaultMode: 0400
+        - name: server-ca-volume
+          secret:
+            secretName: {{ .Values.cluster.secret.serverCA }}
+            defaultMode: 0400
+        - name: cnpg-cluster-password-volume
+          secret:
+            secretName: {{ .Values.cluster.secret.password }}
+            defaultMode: 0400
+        {{- end }}

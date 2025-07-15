@@ -1,4 +1,5 @@
 tilt_settings_file = "./tilt-settings.yaml"
+load('ext://helm_resource', 'helm_resource')
 settings = read_yaml(tilt_settings_file)
 
 update_settings(k8s_upsert_timeout_secs=300)
@@ -24,10 +25,11 @@ local_resource(
     cmd="kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/{}/cert-manager.crds.yaml".format(
         cert_manager_version
     ),
+    labels=["Dependency"],
 )
 
 load("ext://helm_resource", "helm_resource", "helm_repo")
-helm_repo("jetstack-repo", "https://charts.jetstack.io")
+helm_repo("jetstack-repo", "https://charts.jetstack.io", labels=["Dependency"])
 helm_resource(
     "cert-manager",
     "jetstack/cert-manager",
@@ -43,6 +45,7 @@ helm_resource(
         "jetstack-repo",
         "cert-manager-crds",
     ],
+    labels=["Dependency"],
 )
 
 
@@ -55,20 +58,65 @@ controller_image = settings.get("controller").get("image")
 storage_image = settings.get("storage").get("image")
 worker_image = settings.get("worker").get("image")
 
-yaml = helm(
-    "./charts/sbombastic",
-    name="sbombastic",
-    namespace="sbombastic",
-    set=[
-        "controller.image.repository=" + controller_image,
-        "storage.image.repository=" + storage_image,
-        "worker.image.repository=" + worker_image,
-        "controller.replicas=1",
-        "storage.replicas=1",
-        "worker.replicas=1",
+helm_resource(
+    name         = "sbombastic",
+    chart        = "./charts/sbombastic",
+    release_name = "sbombastic",
+    namespace    = "sbombastic",
+
+    flags = [
+        "--set=global.cattle.systemDefaultRegistry=",
+        "--set=controller.image.repository=" + controller_image,
+        "--set=worker.image.repository="     + worker_image,
+        "--set=storage.image.repository="    + storage_image,
+        "--set=controller.replicas=1",
+        "--set=worker.replicas=1",
+        "--set=storage.replicas=1",
+        "--set=security.harden_deployment=false",
+        "--set=cluster.createCluster=true",
+        "--set=cloudnative-pg.enabled=true", # TODO: remove this when the cnpg integration is done
+        "--wait",
     ],
+
+    # Tell Tilt which locally-built images map to which values
+    image_deps = [
+        controller_image,
+        worker_image,
+        storage_image,
+    ],
+    image_keys = [
+        ("controller.image.repository", "controller.image.tag"),
+        ("worker.image.repository",     "worker.image.tag"),
+        ("storage.image.repository",    "storage.image.tag"),
+    ],
+
+    # Wait for cert-manager first
+    resource_deps = [
+        "cert-manager",          # if you installed cert-manager above
+    ],
+    labels=["SBOMbastic"],
 )
-k8s_yaml(yaml)
+
+local_resource(
+    "controller-logs",
+    serve_cmd="kubectl logs -f deployment/sbombastic-controller -n sbombastic",
+    resource_deps=["sbombastic"],
+    labels=["SBOMbastic"],
+)
+
+local_resource(
+    "storage-logs",
+    serve_cmd="kubectl logs -f deployment/sbombastic-storage -n sbombastic",
+    resource_deps=["sbombastic"],
+    labels=["SBOMbastic"],
+)
+
+local_resource(
+    "worker-logs",
+    serve_cmd="kubectl logs -f deployment/sbombastic-worker -n sbombastic",
+    resource_deps=["sbombastic"],
+    labels=["SBOMbastic"],
+)
 
 # Hot reloading containers
 local_resource(
@@ -82,6 +130,7 @@ local_resource(
         "internal/controller",
         "internal/messaging",
     ],
+    labels=["SBOMbastic"],
 )
 
 entrypoint = ["/controller", "--log-level=debug"]
@@ -115,6 +164,7 @@ local_resource(
         "internal/storage",
         "pkg",
     ],
+    labels=["SBOMbastic"],
 )
 
 entrypoint = ["/storage"]
@@ -149,6 +199,7 @@ local_resource(
         "internal/messaging",
         "internal/handlers",
     ],
+    labels=["SBOMbastic"],
 )
 
 entrypoint = ["/worker"]

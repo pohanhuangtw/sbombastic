@@ -1,0 +1,34 @@
+{{ if .Values.cluster.createCluster }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ .Values.cluster.fullnameOverride }}
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    "helm.sh/hook": post-install
+    "helm.sh/hook-weight": "1"
+    "helm.sh/resource-policy": keep
+spec:
+  instances: {{ .Values.cluster.cluster.instances }}
+  bootstrap:
+    initdb:
+      database: {{ .Values.cluster.cluster.initdb.database }}
+      owner: {{ .Values.cluster.cluster.initdb.owner }}
+      secret:
+        name: "" # cnpg will create a secret with the name of the database owner
+
+  postgresql:
+    pg_hba:
+      - hostssl all all 0.0.0.0/0 scram-sha-256 clientcert=verify-full # mTLS for all connections
+      - hostnossl all all 0.0.0.0/0 reject
+
+  storage:
+    size: {{ .Values.cluster.storege.size }}
+    storageClass: {{ .Values.cluster.storege.storageClass }}
+
+  certificates:
+    serverCASecret:   {{ include "sbombastic.fullname" . }}-cnpg-server-cert
+    serverTLSSecret:  {{ include "sbombastic.fullname" . }}-cnpg-server-cert
+    clientCASecret:   {{ include "sbombastic.fullname" . }}-cnpg-client-cert
+    replicationTLSSecret: {{ include "sbombastic.fullname" . }}-cnpg-client-cert
+{{- end }}
