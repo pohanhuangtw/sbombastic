@@ -1,6 +1,6 @@
 # SBOMbastic
 
-A SBOM-centric security scanbner for Kubernetes.
+fff
 
 This is still being developed. For additional details, please refer to the [RFC](docs/rfc).
 
