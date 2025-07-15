@@ -18,6 +18,7 @@ sources:
       token: '{{ requiredEnv .github.token }}'
       versionfilter:
         kind: "semver"
+        pattern: "*"
 
 scms:
   default:
