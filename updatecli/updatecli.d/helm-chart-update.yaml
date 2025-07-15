@@ -16,8 +16,13 @@ sources:
       owner: '{{ requiredEnv .github.owner }}'
       repository: sbombastic
       token: '{{ requiredEnv .github.token }}'
+      typefilter:
+        prerelease: true
+        release: true
+        draft: false
       versionfilter:
         kind: "semver"
+        pattern: ">=0.0.0-0" # include pre-release, release
 
 scms:
   default:
